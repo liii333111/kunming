@@ -1,0 +1,1413 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>昆明网红打卡地图</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    background: #f7f5f2;
+    color: #2d2a24;
+    padding: 16px 12px 40px;
+    min-height: 100vh;
+  }
+  .container {
+    max-width: 720px;
+    margin: 0 auto;
+    background: #ffffff;
+    border-radius: 20px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+    padding: 0 0 24px;
+    border: 1px solid #f0ebe5;
+    overflow: hidden;
+  }
+  #mapContainer {
+    width: 100%;
+    height: 42vh;
+    min-height: 240px;
+    background: #e8e2da;
+    border-bottom: 1px solid #f0ebe5;
+    margin-bottom: 18px;
+    position: relative;
+  }
+  #mapHint {
+    display: none;
+    position: absolute;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(45, 42, 36, 0.88);
+    color: #fff;
+    font-size: 0.85rem;
+    padding: 8px 16px;
+    border-radius: 30px;
+    z-index: 100;
+    white-space: nowrap;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    pointer-events: none;
+  }
+  #mapHint.show { display: block; }
+  #mapHint.done { background: rgba(47, 107, 58, 0.92); }
+
+  .content-inner { padding: 0 18px; }
+
+  .title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+  }
+  h1 {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #2d2a24;
+  }
+  .stats-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
+    font-weight: 550;
+    color: #2f6b3a;
+    background: #e8f0e8;
+    border: 1px solid #cfe0cf;
+    padding: 5px 12px;
+    border-radius: 30px;
+    white-space: nowrap;
+  }
+  .stats-badge .stats-icon { font-size: 0.9rem; }
+
+  .search-box { position: relative; margin-bottom: 14px; }
+  .search-box input {
+    width: 100%;
+    padding: 12px 16px 12px 42px;
+    font-size: 1rem;
+    border: 1.5px solid #e7e1d9;
+    border-radius: 40px;
+    background: #fcfaf8;
+    outline: none;
+    color: #2d2a24;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .search-box input:focus {
+    border-color: #c9ab8b;
+    box-shadow: 0 0 0 3px rgba(193, 162, 128, 0.15);
+    background: #fff;
+  }
+  .search-box::before {
+    content: '🔍';
+    position: absolute;
+    left: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1rem;
+    opacity: 0.55;
+    pointer-events: none;
+  }
+
+  .filter-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+  }
+  .filter-row:last-of-type { margin-bottom: 18px; }
+  .filter-label {
+    font-size: 0.78rem;
+    color: #a69c90;
+    font-weight: 500;
+    flex-shrink: 0;
+    margin-right: 2px;
+    letter-spacing: 0.02em;
+  }
+  .filter-btn,
+  .source-btn {
+    padding: 7px 14px;
+    font-size: 0.88rem;
+    font-weight: 500;
+    color: #5e554a;
+    background: transparent;
+    border: 1.5px solid #e7e1d9;
+    border-radius: 30px;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .filter-btn:hover,
+  .source-btn:hover { background: #f3efe9; border-color: #d6cbbc; }
+  .filter-btn.active {
+    background: #2d2a24;
+    border-color: #2d2a24;
+    color: #fff;
+  }
+  .source-btn.active {
+    background: #7a624c;
+    border-color: #7a624c;
+    color: #fff;
+  }
+
+  .card-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .card {
+    display: flex;
+    gap: 12px;
+    border: 1px solid #f0ebe5;
+    border-radius: 14px;
+    padding: 12px;
+    background: #fff;
+    transition: box-shadow 0.15s, border-color 0.15s;
+    cursor: pointer;
+    overflow: hidden;
+  }
+  .card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+    border-color: #e3dbd1;
+  }
+  /* 缩略图 */
+  .card-thumb {
+    width: 84px;
+    min-width: 84px;
+    height: 84px;
+    border-radius: 12px;
+    object-fit: cover;
+    background: #f3efe9;
+    display: block;
+  }
+  .card-thumb.placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.9rem;
+    background: #f0e8e0;
+    border: 1px dashed #e0d6cb;
+  }
+  .card-main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .card-title {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+  .card-title .name {
+    font-size: 1.08rem;
+    font-weight: 650;
+    color: #2d2a24;
+  }
+  .badge {
+    font-size: 0.72rem;
+    padding: 3px 10px;
+    border-radius: 30px;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .badge.type { background: #f0e8e0; color: #7a624c; }
+  .badge.source { background: #e9f0e9; color: #3c6e4b; }
+  .card-desc {
+    font-size: 0.88rem;
+    color: #6e6358;
+    line-height: 1.5;
+    margin-bottom: 10px;
+    word-break: break-word;
+  }
+  .card-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: auto;
+    flex-wrap: wrap;
+  }
+  .visit-btn {
+    padding: 5px 14px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: #8a7d6e;
+    background: transparent;
+    border: 1.2px solid #e0d6cb;
+    border-radius: 30px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .visit-btn:hover { background: #f3efe9; border-color: #cbbeb0; }
+  .visit-btn.visited {
+    background: #e8f0e8;
+    border-color: #9bb89b;
+    color: #2f6b3a;
+  }
+  .edit-btn {
+    padding: 5px 12px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: #7a624c;
+    background: transparent;
+    border: 1.2px solid #e7e1d9;
+    border-radius: 30px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .edit-btn:hover { background: #f3efe9; border-color: #c9ab8b; }
+  .del-btn {
+    padding: 5px 12px;
+    font-size: 0.8rem;
+    color: #c2b6a8;
+    background: transparent;
+    border: 1.2px solid transparent;
+    border-radius: 30px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .del-btn:hover { color: #b85c5c; background: #faecec; border-color: #f0caca; }
+  .empty {
+    text-align: center;
+    padding: 40px 16px;
+    color: #a69c90;
+    font-size: 0.95rem;
+    background: #fcfaf8;
+    border: 1px dashed #e3dbd1;
+    border-radius: 14px;
+  }
+  .add-toggle-btn {
+    width: 100%;
+    padding: 12px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: #6b5f52;
+    background: #faf7f2;
+    border: 1.5px dashed #d9cec1;
+    border-radius: 40px;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: center;
+  }
+  .add-toggle-btn:hover { background: #f3efe9; border-color: #c9bcae; }
+  .add-toggle-btn.editing {
+    background: #f0e8e0;
+    border-color: #c9ab8b;
+    border-style: solid;
+    color: #7a624c;
+    font-weight: 550;
+  }
+  .add-form {
+    display: none;
+    margin-top: 14px;
+    padding: 16px;
+    background: #fcfaf8;
+    border: 1px solid #f0ebe5;
+    border-radius: 16px;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .add-form.open { display: flex; }
+  .add-form input[type="text"],
+  .add-form select,
+  .add-form textarea {
+    width: 100%;
+    padding: 10px 14px;
+    font-size: 0.9rem;
+    font-family: inherit;
+    border: 1.3px solid #e7e1d9;
+    border-radius: 12px;
+    background: #fff;
+    outline: none;
+    color: #2d2a24;
+    transition: border-color 0.15s;
+  }
+  .add-form input[type="text"]:focus,
+  .add-form select:focus,
+  .add-form textarea:focus {
+    border-color: #c9ab8b;
+  }
+  .add-form textarea {
+    resize: vertical;
+    min-height: 60px;
+  }
+  .form-row {
+    display: flex;
+    gap: 10px;
+  }
+  .form-row > * { flex: 1; }
+
+  /* ===== 图片字段 ===== */
+  .img-field {
+    display: flex;
+    gap: 12px;
+    padding: 12px;
+    background: #fff;
+    border: 1.3px solid #e7e1d9;
+    border-radius: 12px;
+    align-items: flex-start;
+  }
+  .img-preview {
+    width: 96px;
+    min-width: 96px;
+    height: 96px;
+    border-radius: 10px;
+    background: #f3efe9;
+    border: 1px dashed #e0d6cb;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.72rem;
+    color: #b8aea2;
+    overflow: hidden;
+    text-align: center;
+    padding: 4px;
+  }
+  .img-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 8px;
+  }
+  .img-controls {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .img-btn-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .img-upload-btn {
+    padding: 7px 14px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: #fff;
+    background: #7a624c;
+    border: none;
+    border-radius: 30px;
+    cursor: pointer;
+    transition: background 0.15s;
+    white-space: nowrap;
+    display: inline-block;
+  }
+  .img-upload-btn:hover { background: #6a5440; }
+  .img-clear-btn {
+    padding: 7px 12px;
+    font-size: 0.8rem;
+    color: #a69c90;
+    background: transparent;
+    border: 1.2px solid #e7e1d9;
+    border-radius: 30px;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .img-clear-btn:hover { color: #b85c5c; border-color: #f0caca; background: #faecec; }
+  .img-url-input {
+    width: 100%;
+    padding: 8px 12px;
+    font-size: 0.82rem;
+    font-family: inherit;
+    border: 1.3px solid #e7e1d9;
+    border-radius: 10px;
+    background: #fff;
+    outline: none;
+    color: #2d2a24;
+  }
+  .img-url-input:focus { border-color: #c9ab8b; }
+  .img-tip {
+    font-size: 0.72rem;
+    color: #b8aea2;
+    line-height: 1.4;
+  }
+
+  .location-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    background: #fff;
+    border: 1.3px solid #e7e1d9;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    flex-wrap: wrap;
+  }
+  .location-row .loc-icon { font-size: 1rem; }
+  .location-row .loc-text { flex: 1; min-width: 120px; color: #8a7d6e; }
+  .location-row.picked { border-color: #9bb89b; background: #f2f8f2; }
+  .location-row.picked .loc-text { color: #2f6b3a; }
+  .loc-pick-btn {
+    padding: 5px 12px;
+    font-size: 0.78rem;
+    color: #6b5f52;
+    background: #f3efe9;
+    border: none;
+    border-radius: 20px;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: background 0.15s;
+  }
+  .loc-pick-btn:hover { background: #e8e1d8; }
+  .loc-pick-btn:disabled { opacity: 0.6; cursor: wait; }
+
+  .form-btns {
+    display: flex;
+    gap: 10px;
+    margin-top: 4px;
+  }
+  .save-btn {
+    flex: 1;
+    padding: 11px;
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: #fff;
+    background: #2d2a24;
+    border: none;
+    border-radius: 40px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .save-btn:hover { background: #403b33; }
+  .cancel-btn {
+    flex: 1;
+    padding: 11px;
+    font-size: 0.92rem;
+    font-weight: 500;
+    color: #7a6e60;
+    background: transparent;
+    border: 1.3px solid #e7e1d9;
+    border-radius: 40px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .cancel-btn:hover { background: #f3efe9; }
+
+  /* 信息窗图片 */
+  .iw-box { padding: 0; min-width: 180px; max-width: 240px; }
+  .iw-img {
+    width: 100%;
+    height: 110px;
+    object-fit: cover;
+    border-radius: 8px 8px 0 0;
+    display: block;
+    margin-bottom: 8px;
+    background: #f3efe9;
+  }
+  .iw-body { padding: 0 4px 4px; }
+  .iw-name { font-size: 1rem; font-weight: 650; color: #2d2a24; margin-bottom: 4px; }
+  .iw-badges { display: flex; gap: 6px; margin-bottom: 6px; flex-wrap: wrap; }
+  .iw-badge { font-size: 0.7rem; padding: 2px 8px; border-radius: 30px; }
+  .iw-type { background: #f0e8e0; color: #7a624c; }
+  .iw-source { background: #e9f0e9; color: #3c6e4b; }
+  .iw-desc { font-size: 0.82rem; color: #6e6358; line-height: 1.4; }
+
+  @media (max-width: 480px) {
+    h1 { font-size: 1.35rem; }
+    .card-title .name { font-size: 1rem; }
+    .form-row { flex-direction: column; }
+    #mapContainer { height: 36vh; min-height: 200px; }
+    .filter-btn, .source-btn { padding: 6px 12px; font-size: 0.82rem; }
+    .card-thumb { width: 68px; min-width: 68px; height: 68px; }
+    .img-field { flex-direction: column; }
+    .img-preview { width: 100%; height: 140px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div id="mapContainer">
+    <div id="mapHint"></div>
+  </div>
+
+  <div class="content-inner">
+    <div class="title-row">
+      <h1>昆明网红打卡地图</h1>
+      <span class="stats-badge" id="statsBadge">
+        <span class="stats-icon">🏅</span>
+        <span id="statsText">已打卡 0 / 0</span>
+      </span>
+    </div>
+
+    <div class="search-box">
+      <input type="text" id="searchInput" placeholder="搜索名字或描述..." autocomplete="off">
+    </div>
+
+    <div class="filter-row" id="filterBar">
+      <span class="filter-label">类型</span>
+      <button type="button" class="filter-btn active" data-filter="all">全部</button>
+      <button type="button" class="filter-btn" data-filter="咖啡">咖啡</button>
+      <button type="button" class="filter-btn" data-filter="餐厅">餐厅</button>
+      <button type="button" class="filter-btn" data-filter="拍照点">拍照点</button>
+      <button type="button" class="filter-btn" data-filter="景点">景点</button>
+    </div>
+
+    <div class="filter-row" id="sourceBar">
+      <span class="filter-label">来源</span>
+      <button type="button" class="source-btn active" data-source="all">全部</button>
+      <button type="button" class="source-btn" data-source="小红书">小红书</button>
+      <button type="button" class="source-btn" data-source="抖音">抖音</button>
+      <button type="button" class="source-btn" data-source="其他">其他</button>
+    </div>
+
+    <div class="card-list" id="cardList"></div>
+
+    <button type="button" class="add-toggle-btn" id="addToggleBtn">+ 添加打卡点</button>
+    <div class="add-form" id="addForm">
+      <input type="text" id="newName" placeholder="名称（必填）" maxlength="40">
+      <div class="form-row">
+        <select id="newType">
+          <option value="咖啡">咖啡</option>
+          <option value="餐厅">餐厅</option>
+          <option value="拍照点">拍照点</option>
+          <option value="景点">景点</option>
+        </select>
+        <select id="newSource">
+          <option value="小红书">小红书</option>
+          <option value="抖音">抖音</option>
+          <option value="其他">其他</option>
+        </select>
+      </div>
+      <textarea id="newDesc" placeholder="简短描述（选填）" maxlength="120"></textarea>
+
+      <!-- 图片 -->
+      <div class="img-field">
+        <div class="img-preview" id="imgPreview">暂无图片</div>
+        <div class="img-controls">
+          <div class="img-btn-row">
+            <label class="img-upload-btn">
+              选择本地图片
+              <input type="file" id="imgFile" accept="image/*" style="display:none;">
+            </label>
+            <button type="button" class="img-clear-btn" id="imgClearBtn">清除图片</button>
+          </div>
+          <input type="text" class="img-url-input" id="imgUrl" placeholder="或粘贴图片网址（https://...）">
+          <div class="img-tip">本地图片会自动压缩后保存在浏览器里，建议不超过 2MB。</div>
+        </div>
+      </div>
+
+      <div class="location-row" id="locRow">
+        <span class="loc-icon">📍</span>
+        <span class="loc-text" id="locText">未选择位置（默认放在市中心）</span>
+        <button type="button" class="loc-pick-btn" id="locPickBtn">在地图上选</button>
+        <button type="button" class="loc-pick-btn" id="locLocateBtn">📍 定位</button>
+      </div>
+
+      <div class="form-btns">
+        <button type="button" class="save-btn" id="addSubmitBtn">保存</button>
+        <button type="button" class="cancel-btn" id="addCancelBtn">取消</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  window._AMapSecurityConfig = {
+    securityJsCode: 'c8d8463c81dad3ca240d6a3de2529e21'
+  };
+</script>
+<script src="https://webapi.amap.com/loader.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  'use strict';
+
+  var KEY_CUSTOM = 'km_custom_spots_v2';
+  var KEY_VISITED = 'km_visited_ids_v2';
+
+  var DEFAULT_LNG = 102.712;
+  var DEFAULT_LAT = 25.040;
+
+  /*
+    BASE_SPOTS 说明：
+    每个点可以加 img 字段放图片网址，例如：
+    { id: 'b1', ..., img: 'https://xxx.com/a.jpg' }
+    没有 img 字段的点，卡片会显示分类 emoji 占位块。
+  */
+  var BASE_SPOTS = [
+    { id: 'b1',  name: '光宗三号咖啡',     type: '咖啡',   source: '小红书', desc: '翠湖边的老宅咖啡馆，桂花拿铁是招牌，午后光影很好拍。', lng: 102.7045, lat: 25.0480 },
+    { id: 'b2',  name: '不在庙堂',         type: '咖啡',   source: '抖音',   desc: '居民楼下的日式喫茶店，厚乳拿铁和提拉米苏都推荐。',     lng: 102.7180, lat: 25.0520 },
+    { id: 'b3',  name: '铁皮巷树下的咖啡', type: '咖啡',   source: '其他',   desc: '梧桐树下的街角小店，创意特调「昆明夏天」清爽好喝。',   lng: 102.7100, lat: 25.0420 },
+    { id: 'b4',  name: '秘舍咖啡',         type: '咖啡',   source: '小红书', desc: '文化巷里的阁楼咖啡馆，手冲豆单丰富，复古家具好看。',   lng: 102.7020, lat: 25.0530 },
+    { id: 'b5',  name: '花街咖啡与酒',     type: '咖啡',   source: '抖音',   desc: '巡津街网红店，白天咖啡晚上酒，露天座位很出片。',       lng: 102.7135, lat: 25.0340 },
+    { id: 'b6',  name: '壹楼食堂',         type: '餐厅',   source: '小红书', desc: '创意融合菜，黄油啤酒和烤鸡必点，店内复古装潢。',       lng: 102.7160, lat: 25.0450 },
+    { id: 'b7',  name: '甩碗米线',         type: '餐厅',   source: '抖音',   desc: '本地人排队的小锅米线，臭豆腐米线是一绝。',             lng: 102.7090, lat: 25.0380 },
+    { id: 'b8',  name: '老滇过桥米线',     type: '餐厅',   source: '抖音',   desc: '传统过桥米线，汤头鲜甜，配菜丰富。',                   lng: 102.7075, lat: 25.0440 },
+    { id: 'b9',  name: '萨尔瓦多西餐厅',   type: '餐厅',   source: '其他',   desc: '文化巷老牌西餐厅，墨西哥卷和意面份量足。',             lng: 102.7015, lat: 25.0525 },
+    { id: 'b10', name: '围炉烤肉',         type: '餐厅',   source: '小红书', desc: '日式炭火烤肉，牛肉品质在线，适合朋友聚餐。',           lng: 102.7210, lat: 25.0480 },
+    { id: 'b11', name: '公园1903凯旋门',   type: '拍照点', source: '小红书', desc: '法式建筑群和喷泉广场，傍晚亮灯后拍照很有电影感。',     lng: 102.6640, lat: 24.9930 },
+    { id: 'b12', name: '傲城大厦天空之眼', type: '拍照点', source: '抖音',   desc: '圆形天井仰拍视角震撼，建议中午光线直射时来。',         lng: 102.7145, lat: 25.0335 },
+    { id: 'b13', name: '云南大学银杏道',   type: '拍照点', source: '小红书', desc: '秋季银杏金黄铺满大道，适合拍学院风照片。',             lng: 102.7050, lat: 25.0560 },
+    { id: 'b14', name: '彩云里涂鸦墙',     type: '拍照点', source: '其他',   desc: '年轻潮流聚集地，整面涂鸦墙色彩鲜明。',                 lng: 102.7220, lat: 25.0400 },
+    { id: 'b15', name: '长虫山日落观景台', type: '拍照点', source: '抖音',   desc: '昆明日落绝佳机位，俯瞰城市与远山。',                   lng: 102.7320, lat: 25.0780 },
+    { id: 'b16', name: '滇池海埂大坝',     type: '景点',   source: '抖音',   desc: '冬季红嘴鸥漫天飞舞，可喂鸥拍照。',                     lng: 102.6690, lat: 24.9560 },
+    { id: 'b17', name: '翠湖公园',         type: '景点',   source: '小红书', desc: '城市绿肺，四季皆有景，周边咖啡馆扎堆。',               lng: 102.7050, lat: 25.0490 },
+    { id: 'b18', name: '金马碧鸡坊',       type: '景点',   source: '其他',   desc: '昆明地标建筑，夜景金碧辉煌，周边小吃多。',             lng: 102.7120, lat: 25.0380 },
+    { id: 'b19', name: '西山龙门',         type: '景点',   source: '抖音',   desc: '悬崖石窟与俯瞰滇池的壮阔视野，建议早上去。',           lng: 102.6580, lat: 24.9630 },
+    { id: 'b20', name: '斗南花市',         type: '景点',   source: '抖音',   desc: '亚洲最大鲜花交易市场，晚上8点后拍卖市集很热闹。',     lng: 102.7950, lat: 24.9080 }
+  ];
+
+  var TYPE_EMOJI = { '咖啡': '☕', '餐厅': '🍽️', '拍照点': '📸', '景点': '🏞️' };
+
+  var customSpots = [];
+  var visitedIds = new Set();
+  var currentFilter = 'all';
+  var currentSource = 'all';
+  var currentSearch = '';
+  var editingId = null;
+  var formImg = '';   // 当前表单里的图片（base64 或 URL）
+
+  var map = null;
+  var AMapRef = null;
+  var infoWindow = null;
+  var markers = [];
+  var pickMode = false;
+  var pickedLng = null;
+  var pickedLat = null;
+  var tempMarker = null;
+  var geolocation = null;
+
+  var searchInput   = document.getElementById('searchInput');
+  var filterBar     = document.getElementById('filterBar');
+  var sourceBar     = document.getElementById('sourceBar');
+  var cardList      = document.getElementById('cardList');
+  var addToggleBtn  = document.getElementById('addToggleBtn');
+  var addForm       = document.getElementById('addForm');
+  var newNameInput  = document.getElementById('newName');
+  var newTypeSelect = document.getElementById('newType');
+  var newSourceSelect = document.getElementById('newSource');
+  var newDescInput  = document.getElementById('newDesc');
+  var addSubmitBtn  = document.getElementById('addSubmitBtn');
+  var addCancelBtn  = document.getElementById('addCancelBtn');
+  var locRow        = document.getElementById('locRow');
+  var locText       = document.getElementById('locText');
+  var locPickBtn    = document.getElementById('locPickBtn');
+  var locLocateBtn  = document.getElementById('locLocateBtn');
+  var mapHint       = document.getElementById('mapHint');
+  var mapContainer  = document.getElementById('mapContainer');
+  var statsText     = document.getElementById('statsText');
+  var imgPreview    = document.getElementById('imgPreview');
+  var imgFile       = document.getElementById('imgFile');
+  var imgUrl        = document.getElementById('imgUrl');
+  var imgClearBtn   = document.getElementById('imgClearBtn');
+
+  function escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function getAllSpots() {
+    return BASE_SPOTS.concat(customSpots);
+  }
+
+  function findSpotById(id) {
+    var all = getAllSpots();
+    for (var i = 0; i < all.length; i++) {
+      if (all[i].id === id) return all[i];
+    }
+    return null;
+  }
+
+  function loadFromStorage() {
+    try {
+      var rawCustom = localStorage.getItem(KEY_CUSTOM);
+      if (rawCustom) {
+        var arr = JSON.parse(rawCustom);
+        if (Array.isArray(arr)) {
+          customSpots = arr.filter(function (s) {
+            return s && typeof s === 'object' && s.id && s.name && s.type;
+          });
+          customSpots.forEach(function (s) {
+            if (typeof s.lng !== 'number') s.lng = DEFAULT_LNG;
+            if (typeof s.lat !== 'number') s.lat = DEFAULT_LAT;
+            if (typeof s.img !== 'string') s.img = '';
+          });
+        }
+      }
+    } catch (e) {
+      console.warn('读取自定义打卡点失败：', e);
+      customSpots = [];
+    }
+
+    try {
+      var rawVisited = localStorage.getItem(KEY_VISITED);
+      if (rawVisited) {
+        var vArr = JSON.parse(rawVisited);
+        if (Array.isArray(vArr)) {
+          visitedIds = new Set(vArr.filter(function (id) {
+            return typeof id === 'string';
+          }));
+        }
+      }
+    } catch (e) {
+      console.warn('读取去过记录失败：', e);
+      visitedIds = new Set();
+    }
+  }
+
+  // 返回 true 表示保存成功
+  function saveCustomSpots() {
+    try {
+      localStorage.setItem(KEY_CUSTOM, JSON.stringify(customSpots));
+      return true;
+    } catch (e) {
+      console.warn('保存自定义打卡点失败：', e);
+      alert('保存失败：浏览器本地存储空间不足。\n\n建议：\n1. 删除一些带大图片的自定义打卡点\n2. 改用"粘贴图片网址"而不是上传本地图片\n3. 换一个体积更小的图片');
+      return false;
+    }
+  }
+
+  function saveVisitedIds() {
+    try {
+      localStorage.setItem(KEY_VISITED, JSON.stringify(Array.from(visitedIds)));
+    } catch (e) {
+      console.warn('保存去过记录失败：', e);
+    }
+  }
+
+  function updateStats() {
+    var all = getAllSpots();
+    var total = all.length;
+    var done = 0;
+    for (var i = 0; i < all.length; i++) {
+      if (visitedIds.has(all[i].id)) done++;
+    }
+    if (statsText) {
+      statsText.textContent = '已打卡 ' + done + ' / ' + total;
+    }
+  }
+
+  function render() {
+    var all = getAllSpots();
+    var keyword = currentSearch.trim().toLowerCase();
+
+    var filtered = all.filter(function (spot) {
+      if (currentFilter !== 'all' && spot.type !== currentFilter) return false;
+      if (currentSource !== 'all' && (spot.source || '其他') !== currentSource) return false;
+      if (keyword) {
+        var nameHit = String(spot.name).toLowerCase().indexOf(keyword) !== -1;
+        var descHit = String(spot.desc || '').toLowerCase().indexOf(keyword) !== -1;
+        if (!nameHit && !descHit) return false;
+      }
+      return true;
+    });
+
+    if (filtered.length === 0) {
+      cardList.innerHTML = '<div class="empty">没有找到打卡点<br><span style="font-size:0.82rem;margin-top:6px;display:block;color:#c2b6a8;">试试切换筛选或清空搜索</span></div>';
+      updateStats();
+      return;
+    }
+
+    var html = '';
+    for (var i = 0; i < filtered.length; i++) {
+      var spot = filtered[i];
+      var visited = visitedIds.has(spot.id);
+      var isCustom = spot.id.indexOf('custom-') === 0;
+      var emoji = TYPE_EMOJI[spot.type] || '📍';
+
+      html += '<div class="card" data-spot-id="' + escapeHtml(spot.id) + '">';
+
+      if (spot.img) {
+        html += '<img class="card-thumb" src="' + escapeHtml(spot.img) + '" alt="" loading="lazy" onerror="this.outerHTML=\'<div class=&quot;card-thumb placeholder&quot;>' + emoji + '</div>\'">';
+      } else {
+        html += '<div class="card-thumb placeholder">' + emoji + '</div>';
+      }
+
+      html += '  <div class="card-main">';
+      html += '    <div class="card-title">';
+      html += '      <span class="name">' + escapeHtml(spot.name) + '</span>';
+      html += '      <span class="badge type">' + escapeHtml(spot.type) + '</span>';
+      html += '      <span class="badge source">' + escapeHtml(spot.source || '其他') + '</span>';
+      html += '    </div>';
+      html += '    <div class="card-desc">' + escapeHtml(spot.desc || '') + '</div>';
+      html += '    <div class="card-actions">';
+      html += '      <button type="button" class="visit-btn' + (visited ? ' visited' : '') + '" data-action="visit" data-id="' + escapeHtml(spot.id) + '">' + (visited ? '✓ 已去过' : '我去过') + '</button>';
+      if (isCustom) {
+        html += '      <button type="button" class="edit-btn" data-action="edit" data-id="' + escapeHtml(spot.id) + '">编辑</button>';
+        html += '      <button type="button" class="del-btn" data-action="delete" data-id="' + escapeHtml(spot.id) + '">删除</button>';
+      }
+      html += '    </div>';
+      html += '  </div>';
+      html += '</div>';
+    }
+    cardList.innerHTML = html;
+    updateStats();
+  }
+
+  function syncFilterButtons() {
+    var buttons = filterBar.querySelectorAll('.filter-btn');
+    for (var i = 0; i < buttons.length; i++) {
+      var btn = buttons[i];
+      if (btn.dataset.filter === currentFilter) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+    }
+  }
+
+  function syncSourceButtons() {
+    var buttons = sourceBar.querySelectorAll('.source-btn');
+    for (var i = 0; i < buttons.length; i++) {
+      var btn = buttons[i];
+      if (btn.dataset.source === currentSource) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+    }
+  }
+
+  function initMap() {
+    if (typeof AMapLoader === 'undefined') {
+      console.error('AMapLoader 未加载，请检查 loader.js');
+      return;
+    }
+    AMapLoader.load({
+      key: '0aad41a8ae10301cf0fa27f245671916',
+      version: '2.0',
+      plugins: ['AMap.InfoWindow', 'AMap.Marker', 'AMap.Geolocation']
+    }).then(function (AMap) {
+      AMapRef = AMap;
+      map = new AMap.Map('mapContainer', {
+        center: [DEFAULT_LNG, DEFAULT_LAT],
+        zoom: 11
+      });
+      infoWindow = new AMap.InfoWindow({ offset: new AMap.Pixel(0, -30) });
+
+      if (AMap.Geolocation) {
+        geolocation = new AMap.Geolocation({
+          enableHighAccuracy: true,
+          timeout: 10000
+        });
+      }
+
+      map.on('click', function (e) {
+        if (!pickMode) return;
+        pickedLng = e.lnglat.getLng();
+        pickedLat = e.lnglat.getLat();
+        if (tempMarker) {
+          map.remove(tempMarker);
+        }
+        tempMarker = new AMapRef.Marker({
+          position: [pickedLng, pickedLat],
+          title: '新打卡点位置',
+          animation: 'AMAP_ANIMATION_DROP'
+        });
+        map.add(tempMarker);
+
+        locRow.classList.add('picked');
+        locText.textContent = '已选位置：' + pickedLng.toFixed(5) + ', ' + pickedLat.toFixed(5);
+
+        exitPickMode();
+      });
+
+      renderMarkers();
+      console.log('地图加载成功');
+    }).catch(function (e) {
+      console.error('地图加载失败：', e);
+    });
+  }
+
+  function buildInfoHtml(spot) {
+    var emoji = TYPE_EMOJI[spot.type] || '📍';
+    var html = '<div class="iw-box">';
+    if (spot.img) {
+      html += '<img class="iw-img" src="' + escapeHtml(spot.img) + '" alt="" onerror="this.style.display=\'none\'">';
+    }
+    html += '<div class="iw-body">';
+    html += '<div class="iw-name">' + escapeHtml(spot.name) + '</div>';
+    html += '<div class="iw-badges">';
+    html += '<span class="iw-badge iw-type">' + emoji + ' ' + escapeHtml(spot.type) + '</span>';
+    html += '<span class="iw-badge iw-source">' + escapeHtml(spot.source || '其他') + '</span>';
+    html += '</div>';
+    html += '<div class="iw-desc">' + escapeHtml(spot.desc || '') + '</div>';
+    html += '</div></div>';
+    return html;
+  }
+
+  function renderMarkers() {
+    if (!map || !AMapRef) return;
+    if (markers.length > 0) {
+      map.remove(markers);
+      markers = [];
+    }
+    var all = getAllSpots();
+    all.forEach(function (spot) {
+      var lng = (typeof spot.lng === 'number') ? spot.lng : DEFAULT_LNG;
+      var lat = (typeof spot.lat === 'number') ? spot.lat : DEFAULT_LAT;
+      var marker = new AMapRef.Marker({
+        position: [lng, lat],
+        title: spot.name
+      });
+      marker.on('click', function () {
+        if (pickMode) return;
+        infoWindow.setContent(buildInfoHtml(spot));
+        infoWindow.open(map, marker.getPosition());
+      });
+      map.add(marker);
+      markers.push(marker);
+    });
+  }
+
+  function flyToSpot(spot) {
+    if (!map || !AMapRef || !spot) return;
+    var lng = (typeof spot.lng === 'number') ? spot.lng : DEFAULT_LNG;
+    var lat = (typeof spot.lat === 'number') ? spot.lat : DEFAULT_LAT;
+
+    if (typeof map.setZoomAndCenter === 'function') {
+      map.setZoomAndCenter(15, [lng, lat], false, 400);
+    } else {
+      map.setZoom(15);
+      map.setCenter([lng, lat]);
+    }
+
+    setTimeout(function () {
+      infoWindow.setContent(buildInfoHtml(spot));
+      infoWindow.open(map, new AMapRef.LngLat(lng, lat));
+    }, 420);
+
+    mapContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function enterPickMode() {
+    if (!map) {
+      alert('地图还没加载好，请稍后再试');
+      return;
+    }
+    pickMode = true;
+    mapHint.textContent = '👆 在地图上点一下，选择打卡点位置';
+    mapHint.className = 'show';
+    if (map.setDefaultCursor) map.setDefaultCursor('crosshair');
+  }
+
+  function exitPickMode() {
+    pickMode = false;
+    mapHint.textContent = '✅ 位置已选定';
+    mapHint.className = 'show done';
+    if (map.setDefaultCursor) map.setDefaultCursor('default');
+    setTimeout(function () {
+      mapHint.className = '';
+    }, 2000);
+  }
+
+  function resetPickState() {
+    pickMode = false;
+    pickedLng = null;
+    pickedLat = null;
+    locRow.classList.remove('picked');
+    locText.textContent = '未选择位置（默认放在市中心）';
+    mapHint.className = '';
+    if (map && map.setDefaultCursor) map.setDefaultCursor('default');
+    if (map && tempMarker) {
+      map.remove(tempMarker);
+      tempMarker = null;
+    }
+  }
+
+  /* ========== 图片：预览与压缩 ========== */
+  function updateImgPreview() {
+    if (formImg) {
+      imgPreview.innerHTML = '<img src="' + escapeHtml(formImg) + '" alt="" onerror="this.parentNode.innerHTML=\'图片加载失败\'">';
+    } else {
+      imgPreview.textContent = '暂无图片';
+    }
+  }
+
+  function setFormImg(val) {
+    formImg = val || '';
+    if (!formImg.startsWith('data:')) {
+      imgUrl.value = formImg;
+    } else {
+      imgUrl.value = '';
+    }
+    updateImgPreview();
+  }
+
+  function compressImage(file, cb) {
+    var MAX = 900;
+    var QUALITY = 0.72;
+    var reader = new FileReader();
+    reader.onload = function (e) {
+      var img = new Image();
+      img.onload = function () {
+        var w = img.width;
+        var h = img.height;
+        if (w > MAX || h > MAX) {
+          var ratio = Math.min(MAX / w, MAX / h);
+          w = Math.round(w * ratio);
+          h = Math.round(h * ratio);
+        }
+        var canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        var ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, w, h);
+        ctx.drawImage(img, 0, 0, w, h);
+        try {
+          cb(canvas.toDataURL('image/jpeg', QUALITY));
+        } catch (err) {
+          cb(e.target.result);
+        }
+      };
+      img.onerror = function () {
+        alert('这张图片无法读取，换一张试试');
+      };
+      img.src = e.target.result;
+    };
+    reader.onerror = function () {
+      alert('读取图片失败，换一张试试');
+    };
+    reader.readAsDataURL(file);
+  }
+
+  imgFile.addEventListener('change', function (e) {
+    var file = e.target.files && e.target.files[0];
+    if (!file) return;
+    if (!/^image\//.test(file.type)) {
+      alert('请选择图片文件');
+      imgFile.value = '';
+      return;
+    }
+    imgPreview.textContent = '压缩中...';
+    compressImage(file, function (dataUrl) {
+      setFormImg(dataUrl);
+      imgFile.value = '';
+    });
+  });
+
+  imgUrl.addEventListener('input', function () {
+    var v = imgUrl.value.trim();
+    formImg = v;
+    updateImgPreview();
+  });
+
+  imgClearBtn.addEventListener('click', function () {
+    setFormImg('');
+    imgFile.value = '';
+  });
+
+  /* ========== 编辑模式 ========== */
+  function enterEditMode(spot) {
+    if (!spot) return;
+    resetPickState();
+
+    editingId = spot.id;
+
+    addForm.classList.add('open');
+    newNameInput.value = spot.name;
+    newTypeSelect.value = spot.type;
+    newSourceSelect.value = spot.source || '其他';
+    newDescInput.value = spot.desc || '';
+    setFormImg(spot.img || '');
+
+    pickedLng = (typeof spot.lng === 'number') ? spot.lng : DEFAULT_LNG;
+    pickedLat = (typeof spot.lat === 'number') ? spot.lat : DEFAULT_LAT;
+    locRow.classList.add('picked');
+    locText.textContent = '当前位置：' + pickedLng.toFixed(5) + ', ' + pickedLat.toFixed(5) + '（可点右侧重选）';
+
+    addSubmitBtn.textContent = '保存修改';
+    addToggleBtn.textContent = '✎ 正在编辑：' + spot.name + '（点这里取消）';
+    addToggleBtn.classList.add('editing');
+
+    addForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    setTimeout(function () { newNameInput.focus(); }, 400);
+  }
+
+  function exitEditMode() {
+    editingId = null;
+    addSubmitBtn.textContent = '保存';
+    addToggleBtn.textContent = '+ 添加打卡点';
+    addToggleBtn.classList.remove('editing');
+    resetAddForm();
+    resetPickState();
+  }
+
+  function resetAddForm() {
+    newNameInput.value = '';
+    newTypeSelect.value = '咖啡';
+    newSourceSelect.value = '小红书';
+    newDescInput.value = '';
+    setFormImg('');
+    imgFile.value = '';
+  }
+
+  searchInput.addEventListener('input', function (e) {
+    currentSearch = e.target.value || '';
+    render();
+  });
+
+  filterBar.addEventListener('click', function (e) {
+    var btn = e.target.closest('.filter-btn');
+    if (!btn) return;
+    var f = btn.dataset.filter;
+    if (!f) return;
+    currentFilter = f;
+    syncFilterButtons();
+    render();
+  });
+
+  sourceBar.addEventListener('click', function (e) {
+    var btn = e.target.closest('.source-btn');
+    if (!btn) return;
+    var s = btn.dataset.source;
+    if (!s) return;
+    currentSource = s;
+    syncSourceButtons();
+    render();
+  });
+
+  cardList.addEventListener('click', function (e) {
+    var btn = e.target.closest('button[data-action]');
+
+    if (btn) {
+      var action = btn.dataset.action;
+      var id = btn.dataset.id;
+      if (!id) return;
+
+      if (action === 'visit') {
+        if (visitedIds.has(id)) {
+          visitedIds.delete(id);
+        } else {
+          visitedIds.add(id);
+        }
+        saveVisitedIds();
+        render();
+        return;
+      }
+
+      if (action === 'edit') {
+        var spotToEdit = findSpotById(id);
+        if (!spotToEdit) return;
+        enterEditMode(spotToEdit);
+        return;
+      }
+
+      if (action === 'delete') {
+        var target = findSpotById(id);
+        if (!target) return;
+        if (!confirm('确定删除「' + target.name + '」吗？')) return;
+
+        if (editingId === id) {
+          exitEditMode();
+          addForm.classList.remove('open');
+        }
+
+        customSpots = customSpots.filter(function (s) { return s.id !== id; });
+        visitedIds.delete(id);
+        saveCustomSpots();
+        saveVisitedIds();
+        render();
+        renderMarkers();
+        return;
+      }
+      return;
+    }
+
+    var card = e.target.closest('.card');
+    if (!card) return;
+    var spotId = card.dataset.spotId;
+    if (!spotId) return;
+    var spot = findSpotById(spotId);
+    if (!spot) return;
+    flyToSpot(spot);
+  });
+
+  addToggleBtn.addEventListener('click', function () {
+    if (editingId) {
+      exitEditMode();
+      addForm.classList.remove('open');
+      return;
+    }
+    addForm.classList.toggle('open');
+    if (addForm.classList.contains('open')) {
+      newNameInput.focus();
+    } else {
+      resetPickState();
+    }
+  });
+
+  addCancelBtn.addEventListener('click', function () {
+    exitEditMode();
+    addForm.classList.remove('open');
+  });
+
+  locPickBtn.addEventListener('click', function () {
+    if (pickMode) return;
+    enterPickMode();
+  });
+
+  locLocateBtn.addEventListener('click', function () {
+    if (!geolocation) {
+      alert('定位服务还没准备好，请稍等地图加载完成再试');
+      return;
+    }
+    if (pickMode) exitPickMode();
+
+    locLocateBtn.textContent = '定位中...';
+    locLocateBtn.disabled = true;
+
+    geolocation.getCurrentPosition(function (status, result) {
+      locLocateBtn.textContent = '📍 定位';
+      locLocateBtn.disabled = false;
+
+      if (status === 'complete') {
+        var lng = result.position.lng;
+        var lat = result.position.lat;
+
+        pickedLng = lng;
+        pickedLat = lat;
+
+        locRow.classList.add('picked');
+        locText.textContent = '当前位置：' + lng.toFixed(5) + ', ' + lat.toFixed(5);
+
+        if (tempMarker) { map.remove(tempMarker); }
+        tempMarker = new AMapRef.Marker({
+          position: [lng, lat],
+          title: '我的位置',
+          animation: 'AMAP_ANIMATION_DROP'
+        });
+        map.add(tempMarker);
+        map.setZoomAndCenter(15, [lng, lat], false, 400);
+      } else {
+        var msg = '定位失败';
+        if (result && result.info) msg += '：' + result.info;
+        msg += '\n\n常见原因：\n1. 浏览器地址栏左边点开，把"位置"权限改成"允许"\n2. Windows 设置 → 隐私 → 位置，打开"位置服务"并允许浏览器\n3. 这台电脑没有可用的定位源（没有 WiFi 定位模块）\n4. 手机通过局域网 IP 访问时不支持定位，需部署到 HTTPS';
+        alert(msg);
+      }
+    }, {
+      enableHighAccuracy: true,
+      timeout: 10000,
+      showButton: false,
+      showMarker: false,
+      showCircle: false,
+      panToLocation: false,
+      zoomToAccuracy: false
+    });
+  });
+
+  addSubmitBtn.addEventListener('click', function () {
+    var name = newNameInput.value.trim();
+    if (!name) {
+      alert('请填写打卡点名称');
+      newNameInput.focus();
+      return;
+    }
+
+    // === 编辑模式 ===
+    if (editingId) {
+      var target = null;
+      for (var i = 0; i < customSpots.length; i++) {
+        if (customSpots[i].id === editingId) { target = customSpots[i]; break; }
+      }
+      if (!target) {
+        exitEditMode();
+        return;
+      }
+
+      // 先备份，写入失败可回滚
+      var backup = {
+        name: target.name,
+        type: target.type,
+        source: target.source,
+        desc: target.desc,
+        lng: target.lng,
+        lat: target.lat,
+        img: target.img
+      };
+
+      target.name = name;
+      target.type = newTypeSelect.value;
+      target.source = newSourceSelect.value;
+      target.desc = newDescInput.value.trim();
+      target.lng = (typeof pickedLng === 'number') ? pickedLng : DEFAULT_LNG;
+      target.lat = (typeof pickedLat === 'number') ? pickedLat : DEFAULT_LAT;
+      target.img = formImg;
+
+      if (!saveCustomSpots()) {
+        // 回滚
+        target.name = backup.name;
+        target.type = backup.type;
+        target.source = backup.source;
+        target.desc = backup.desc;
+        target.lng = backup.lng;
+        target.lat = backup.lat;
+        target.img = backup.img;
+        return;
+      }
+
+      exitEditMode();
+      addForm.classList.remove('open');
+
+      render();
+      renderMarkers();
+      return;
+    }
+
+    // === 新增模式 ===
+    var newSpot = {
+      id: 'custom-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8),
+      name: name,
+      type: newTypeSelect.value,
+      source: newSourceSelect.value,
+      desc: newDescInput.value.trim(),
+      lng: (typeof pickedLng === 'number') ? pickedLng : DEFAULT_LNG,
+      lat: (typeof pickedLat === 'number') ? pickedLat : DEFAULT_LAT,
+      img: formImg
+    };
+
+    customSpots.push(newSpot);
+    if (!saveCustomSpots()) {
+      customSpots.pop();
+      return;
+    }
+
+    resetAddForm();
+    addForm.classList.remove('open');
+    resetPickState();
+
+    currentFilter = 'all';
+    currentSource = 'all';
+    currentSearch = '';
+    searchInput.value = '';
+    syncFilterButtons();
+    syncSourceButtons();
+    render();
+    renderMarkers();
+
+    cardList.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+
+  newNameInput.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      addSubmitBtn.click();
+    }
+  });
+
+  loadFromStorage();
+  syncFilterButtons();
+  syncSourceButtons();
+  render();
+  updateImgPreview();
+  initMap();
+
+  console.log('昆明网红打卡地图已就绪');
+});
+</script>
+</body>
+</html>
