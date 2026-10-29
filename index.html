@@ -298,7 +298,6 @@
   }
   .nav-btn:hover { background: #403b33; }
 
-  /* ===== 反馈行 ===== */
   .feedback-row {
     width: 100%;
     display: flex;
@@ -355,6 +354,7 @@
     cursor: pointer;
     transition: all 0.15s;
     text-align: center;
+    margin-top: 10px;
   }
   .add-toggle-btn:hover { background: #f3efe9; border-color: #c9bcae; }
   .add-toggle-btn.editing {
@@ -553,6 +553,50 @@
   }
   .cancel-btn:hover { background: #f3efe9; }
 
+  /* ===== Tally 推荐区（折叠式） ===== */
+  .suggest-toggle-btn {
+    width: 100%;
+    padding: 12px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: #fff;
+    background: #7a624c;
+    border: 1.5px solid #7a624c;
+    border-radius: 40px;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: center;
+    margin-top: 10px;
+  }
+  .suggest-toggle-btn:hover { background: #6a5440; border-color: #6a5440; }
+  .suggest-toggle-btn.open {
+    background: #f0e8e0;
+    border-color: #c9ab8b;
+    color: #7a624c;
+  }
+  .suggest-wrapper {
+    display: none;
+    margin-top: 14px;
+    padding: 16px;
+    background: #fdf8f4;
+    border: 1px solid #efe0d3;
+    border-radius: 16px;
+  }
+  .suggest-wrapper.open { display: block; }
+  .suggest-wrapper .tally-subtitle {
+    font-size: 0.8rem;
+    color: #a69c90;
+    margin-bottom: 12px;
+    line-height: 1.5;
+  }
+  .suggest-wrapper iframe {
+    border-radius: 12px;
+    border: 1px solid #f0ebe5 !important;
+    background: #fff;
+    display: block;
+    width: 100%;
+  }
+
   .iw-box { padding: 0; min-width: 180px; max-width: 240px; }
   .iw-img {
     width: 100%;
@@ -678,6 +722,22 @@
         <button type="button" class="cancel-btn" id="addCancelBtn">取消</button>
       </div>
     </div>
+
+    <!-- ===== Tally 推荐新地点（折叠式） ===== -->
+    <button type="button" class="suggest-toggle-btn" id="suggestToggleBtn">📮 推荐新地点</button>
+    <div class="suggest-wrapper" id="suggestWrapper">
+      <div class="tally-subtitle">发现了一家好店？在下面填一填，附上照片，我会尽快核实并加进地图。</div>
+      <iframe
+        data-tally-src="https://tally.so/embed/vXXRDQ?alignLeft=1&hideTitle=1&transparentBackground=1&dynamicHeight=1"
+        loading="lazy"
+        width="100%"
+        height="300"
+        frameborder="0"
+        marginheight="0"
+        marginwidth="0"
+        title="推荐新地点">
+      </iframe>
+    </div>
   </div>
 </div>
 
@@ -696,14 +756,12 @@ document.addEventListener('DOMContentLoaded', function () {
   var KEY_VISITED = 'km_visited_ids_v2';
   var KEY_FEEDBACK = 'km_feedback_sent_v1';
 
-  /* ===== 反馈收集：Web3Forms ===== */
   var WEB3FORMS_KEY = 'c3239eed-3d00-443d-a94a-fa77a6d1cc97';
   var WEB3FORMS_URL = 'https://api.web3forms.com/submit';
 
   var DEFAULT_LNG = 102.712;
   var DEFAULT_LAT = 25.040;
 
-  /* ===== 双 Key：本地用本地 Key，线上用线上 Key ===== */
   var AMAP_KEY_ONLINE = '0aad41a8ae10301cf0fa27f245671916';
   var AMAP_KEY_LOCAL  = 'ca9ceb52b3cdca54bd156685d3940e72';
   var isLocalHost = (location.hostname === '127.0.0.1' || location.hostname === 'localhost');
@@ -776,6 +834,9 @@ document.addEventListener('DOMContentLoaded', function () {
   var imgUrl        = document.getElementById('imgUrl');
   var imgClearBtn   = document.getElementById('imgClearBtn');
 
+  var suggestToggleBtn = document.getElementById('suggestToggleBtn');
+  var suggestWrapper   = document.getElementById('suggestWrapper');
+
   function escapeHtml(str) {
     if (str === null || str === undefined) return '';
     return String(str)
@@ -805,7 +866,6 @@ document.addEventListener('DOMContentLoaded', function () {
     return 'https://uri.amap.com/navigation?to=' + lng + ',' + lat + ',' + name + '&mode=car&callnative=1';
   }
 
-  /* ===== 反馈已提交记录（防重复） ===== */
   function loadFeedbackSent() {
     try {
       var raw = localStorage.getItem(KEY_FEEDBACK);
@@ -1000,7 +1060,6 @@ document.addEventListener('DOMContentLoaded', function () {
       html += '    </div>';
       html += '  </div>';
 
-      // 反馈行
       if (sentType) {
         html += '<div class="feedback-row done">';
         html += '  <span class="fb-thanks">🙏 感谢反馈（已标记为：' + escapeHtml(sentType) + '）</span>';
@@ -1584,6 +1643,21 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   });
 
+  /* ===== Tally 推荐区折叠切换 ===== */
+  suggestToggleBtn.addEventListener('click', function () {
+    suggestWrapper.classList.toggle('open');
+    if (suggestWrapper.classList.contains('open')) {
+      suggestToggleBtn.classList.add('open');
+      suggestToggleBtn.textContent = '✕ 收起推荐表单';
+      setTimeout(function () {
+        suggestWrapper.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+    } else {
+      suggestToggleBtn.classList.remove('open');
+      suggestToggleBtn.textContent = '📮 推荐新地点';
+    }
+  });
+
   loadFromStorage();
   syncFilterButtons();
   syncSourceButtons();
@@ -1594,5 +1668,8 @@ document.addEventListener('DOMContentLoaded', function () {
   console.log('昆明网红打卡地图已就绪');
 });
 </script>
+
+<!-- Tally 嵌入脚本 -->
+<script async src="https://tally.so/widgets/embed.js"></script>
 </body>
 </html>
