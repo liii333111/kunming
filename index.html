@@ -520,6 +520,20 @@
   }
   .loc-pick-btn:hover { background: #e8e1d8; }
   .loc-pick-btn:disabled { opacity: 0.6; cursor: wait; }
+  .loc-copy-btn {
+    padding: 5px 12px;
+    font-size: 0.78rem;
+    color: #fff;
+    background: #7a624c;
+    border: none;
+    border-radius: 20px;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: background 0.15s;
+  }
+  .loc-copy-btn:hover { background: #6a5440; }
+  .loc-copy-btn.copied { background: #2f6b3a; }
 
   .form-btns {
     display: flex;
@@ -595,6 +609,22 @@
     background: #fff;
     display: block;
     width: 100%;
+    margin-top: 12px;
+  }
+  .sug-loc-block {
+    margin-bottom: 4px;
+  }
+  .sug-loc-title {
+    font-size: 0.8rem;
+    font-weight: 550;
+    color: #7a624c;
+    margin-bottom: 8px;
+  }
+  .sug-loc-tip {
+    font-size: 0.72rem;
+    color: #b8aea2;
+    margin-top: 6px;
+    line-height: 1.4;
   }
 
   .iw-box { padding: 0; min-width: 180px; max-width: 240px; }
@@ -723,10 +753,25 @@
       </div>
     </div>
 
-    <!-- ===== Tally 推荐新地点（折叠式） ===== -->
+    <!-- ===== Tally 推荐新地点（折叠式 + 地图选点） ===== -->
     <button type="button" class="suggest-toggle-btn" id="suggestToggleBtn">📮 推荐新地点</button>
     <div class="suggest-wrapper" id="suggestWrapper">
-      <div class="tally-subtitle">发现了一家好店？在下面填一填，附上照片，我会尽快核实并加进地图。</div>
+      <div class="tally-subtitle">发现了一家好店？先在下面标记位置，再填 Tally 表单，附上照片，我会尽快核实并加进地图。</div>
+
+      <!-- 地图选点区 -->
+      <div class="sug-loc-block">
+        <div class="sug-loc-title">① 标记位置（选填，但强烈建议）</div>
+        <div class="location-row" id="sugLocRow">
+          <span class="loc-icon">📍</span>
+          <span class="loc-text" id="sugLocText">未选择位置</span>
+          <button type="button" class="loc-pick-btn" id="sugPickBtn">在地图上选</button>
+          <button type="button" class="loc-copy-btn" id="sugCopyBtn" style="display:none;">复制坐标</button>
+        </div>
+        <div class="sug-loc-tip">选好后点“复制坐标”，粘贴到下方表单的「经纬度」栏。</div>
+      </div>
+
+      <!-- Tally 表单 -->
+      <div class="sug-loc-title" style="margin-top:14px;">② 填写详情并提交</div>
       <iframe
         data-tally-src="https://tally.so/embed/vXXRDQ?alignLeft=1&hideTitle=1&transparentBackground=1&dynamicHeight=1"
         loading="lazy"
@@ -805,6 +850,7 @@ document.addEventListener('DOMContentLoaded', function () {
   var infoWindow = null;
   var markers = [];
   var pickMode = false;
+  var pickFor = null; // 'add' 或 'suggest'
   var pickedLng = null;
   var pickedLat = null;
   var tempMarker = null;
@@ -836,6 +882,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
   var suggestToggleBtn = document.getElementById('suggestToggleBtn');
   var suggestWrapper   = document.getElementById('suggestWrapper');
+  var sugLocRow        = document.getElementById('sugLocRow');
+  var sugLocText       = document.getElementById('sugLocText');
+  var sugPickBtn       = document.getElementById('sugPickBtn');
+  var sugCopyBtn       = document.getElementById('sugCopyBtn');
 
   function escapeHtml(str) {
     if (str === null || str === undefined) return '';
@@ -1133,20 +1183,32 @@ document.addEventListener('DOMContentLoaded', function () {
 
       map.on('click', function (e) {
         if (!pickMode) return;
-        pickedLng = e.lnglat.getLng();
-        pickedLat = e.lnglat.getLat();
+        var lng = e.lnglat.getLng();
+        var lat = e.lnglat.getLat();
+
         if (tempMarker) {
           map.remove(tempMarker);
         }
         tempMarker = new AMapRef.Marker({
-          position: [pickedLng, pickedLat],
-          title: '新打卡点位置',
+          position: [lng, lat],
+          title: '新位置',
           animation: 'AMAP_ANIMATION_DROP'
         });
         map.add(tempMarker);
 
-        locRow.classList.add('picked');
-        locText.textContent = '已选位置：' + pickedLng.toFixed(5) + ', ' + pickedLat.toFixed(5);
+        if (pickFor === 'suggest') {
+          sugLocRow.classList.add('picked');
+          sugLocText.textContent = lng.toFixed(5) + ', ' + lat.toFixed(5);
+          sugCopyBtn.style.display = 'inline-block';
+          sugCopyBtn.setAttribute('data-coord', lng.toFixed(6) + ', ' + lat.toFixed(6));
+          sugCopyBtn.textContent = '复制坐标';
+          sugCopyBtn.classList.remove('copied');
+        } else {
+          pickedLng = lng;
+          pickedLat = lat;
+          locRow.classList.add('picked');
+          locText.textContent = '已选位置：' + lng.toFixed(5) + ', ' + lat.toFixed(5);
+        }
 
         exitPickMode();
       });
@@ -1226,33 +1288,52 @@ document.addEventListener('DOMContentLoaded', function () {
     mapContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
-  function enterPickMode() {
+  function enterPickMode(target) {
     if (!map) {
       alert('地图还没加载好，请稍后再试');
       return;
     }
     pickMode = true;
-    mapHint.textContent = '👆 在地图上点一下，选择打卡点位置';
+    pickFor = target || 'add';
+    mapHint.textContent = pickFor === 'suggest'
+      ? '👆 在地图上点一下，标记你推荐的地点'
+      : '👆 在地图上点一下，选择打卡点位置';
     mapHint.className = 'show';
     if (map.setDefaultCursor) map.setDefaultCursor('crosshair');
+    mapContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   function exitPickMode() {
     pickMode = false;
+    var wasSuggest = (pickFor === 'suggest');
+    pickFor = null;
     mapHint.textContent = '✅ 位置已选定';
     mapHint.className = 'show done';
     if (map.setDefaultCursor) map.setDefaultCursor('default');
     setTimeout(function () {
       mapHint.className = '';
     }, 2000);
+
+    if (wasSuggest && suggestWrapper.classList.contains('open')) {
+      setTimeout(function () {
+        suggestWrapper.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 600);
+    }
   }
 
   function resetPickState() {
     pickMode = false;
+    pickFor = null;
     pickedLng = null;
     pickedLat = null;
     locRow.classList.remove('picked');
     locText.textContent = '未选择位置（默认放在市中心）';
+    sugLocRow.classList.remove('picked');
+    sugLocText.textContent = '未选择位置';
+    sugCopyBtn.style.display = 'none';
+    sugCopyBtn.textContent = '复制坐标';
+    sugCopyBtn.classList.remove('copied');
+    sugCopyBtn.removeAttribute('data-coord');
     mapHint.className = '';
     if (map && map.setDefaultCursor) map.setDefaultCursor('default');
     if (map && tempMarker) {
@@ -1496,7 +1577,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   locPickBtn.addEventListener('click', function () {
     if (pickMode) return;
-    enterPickMode();
+    enterPickMode('add');
   });
 
   locLocateBtn.addEventListener('click', function () {
@@ -1655,8 +1736,54 @@ document.addEventListener('DOMContentLoaded', function () {
     } else {
       suggestToggleBtn.classList.remove('open');
       suggestToggleBtn.textContent = '📮 推荐新地点';
+      resetPickState();
     }
   });
+
+  /* ===== 推荐区地图选点 ===== */
+  sugPickBtn.addEventListener('click', function () {
+    if (pickMode) return;
+    enterPickMode('suggest');
+  });
+
+  /* ===== 复制坐标 ===== */
+  sugCopyBtn.addEventListener('click', function () {
+    var coord = sugCopyBtn.getAttribute('data-coord');
+    if (!coord) return;
+
+    function onCopied() {
+      sugCopyBtn.textContent = '✅ 已复制';
+      sugCopyBtn.classList.add('copied');
+      setTimeout(function () {
+        sugCopyBtn.textContent = '复制坐标';
+        sugCopyBtn.classList.remove('copied');
+      }, 2200);
+    }
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(coord).then(onCopied).catch(function () {
+        fallbackCopy(coord, onCopied);
+      });
+    } else {
+      fallbackCopy(coord, onCopied);
+    }
+  });
+
+  function fallbackCopy(text, cb) {
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.top = '-9999px';
+    document.body.appendChild(ta);
+    ta.select();
+    try {
+      document.execCommand('copy');
+      if (cb) cb();
+    } catch (e) {
+      alert('复制失败，请手动长按选中复制：' + text);
+    }
+    document.body.removeChild(ta);
+  }
 
   loadFromStorage();
   syncFilterButtons();
