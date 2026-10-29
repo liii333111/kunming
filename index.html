@@ -179,6 +179,7 @@
     transition: box-shadow 0.15s, border-color 0.15s;
     cursor: pointer;
     overflow: hidden;
+    flex-wrap: wrap;
   }
   .card:hover {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
@@ -296,6 +297,42 @@
     white-space: nowrap;
   }
   .nav-btn:hover { background: #403b33; }
+
+  /* ===== 反馈行 ===== */
+  .feedback-row {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px dashed #f0ebe5;
+    flex-wrap: wrap;
+    font-size: 0.78rem;
+  }
+  .fb-label { color: #a69c90; }
+  .fb-btn {
+    padding: 3px 12px;
+    font-size: 0.76rem;
+    color: #6b5f52;
+    background: transparent;
+    border: 1px solid #e7e1d9;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: inherit;
+  }
+  .fb-btn:hover { background: #f3efe9; }
+  .fb-btn.fb-ok:hover { color: #2f6b3a; border-color: #9bb89b; background: #e8f0e8; }
+  .fb-btn.fb-gone:hover { color: #b85c5c; border-color: #f0caca; background: #faecec; }
+  .fb-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .fb-thanks {
+    font-size: 0.76rem;
+    color: #7a624c;
+    background: #faf7f2;
+    padding: 4px 12px;
+    border-radius: 20px;
+  }
 
   .empty {
     text-align: center;
@@ -657,6 +694,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
   var KEY_CUSTOM = 'km_custom_spots_v2';
   var KEY_VISITED = 'km_visited_ids_v2';
+  var KEY_FEEDBACK = 'km_feedback_sent_v1';
+
+  /* ===== 反馈收集：Web3Forms ===== */
+  var WEB3FORMS_KEY = 'c3239eed-3d00-443d-a94a-fa77a6d1cc97';
+  var WEB3FORMS_URL = 'https://api.web3forms.com/submit';
 
   var DEFAULT_LNG = 102.712;
   var DEFAULT_LAT = 25.040;
@@ -763,6 +805,78 @@ document.addEventListener('DOMContentLoaded', function () {
     return 'https://uri.amap.com/navigation?to=' + lng + ',' + lat + ',' + name + '&mode=car&callnative=1';
   }
 
+  /* ===== 反馈已提交记录（防重复） ===== */
+  function loadFeedbackSent() {
+    try {
+      var raw = localStorage.getItem(KEY_FEEDBACK);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) {
+      return {};
+    }
+  }
+
+  function saveFeedbackSent(obj) {
+    try {
+      localStorage.setItem(KEY_FEEDBACK, JSON.stringify(obj));
+    } catch (e) {
+      console.warn('保存反馈记录失败：', e);
+    }
+  }
+
+  function submitFeedback(spot, type) {
+    var payload = {
+      access_key: WEB3FORMS_KEY,
+      subject: '昆明打卡点反馈：' + spot.name + ' - ' + type,
+      from_name: '昆明网红打卡地图',
+      spot_name: spot.name,
+      spot_id: spot.id,
+      spot_type: spot.type,
+      spot_source: spot.source || '',
+      feedback: type,
+      time: new Date().toLocaleString('zh-CN'),
+      page_url: location.href
+    };
+    return fetch(WEB3FORMS_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    }).then(function (res) { return res.json(); });
+  }
+
+  function handleFeedback(id, type, btn) {
+    var spot = findSpotById(id);
+    if (!spot) return;
+
+    var sent = loadFeedbackSent();
+    if (sent[id]) {
+      alert('你已经反馈过这个地点了，感谢！');
+      return;
+    }
+
+    var row = btn.closest('.feedback-row');
+    if (!row) return;
+    var btns = row.querySelectorAll('.fb-btn');
+    for (var i = 0; i < btns.length; i++) btns[i].disabled = true;
+
+    submitFeedback(spot, type).then(function (res) {
+      if (res && res.success) {
+        sent[id] = type;
+        saveFeedbackSent(sent);
+        row.innerHTML = '<span class="fb-thanks">🙏 感谢反馈（已标记为：' + escapeHtml(type) + '）</span>';
+      } else {
+        for (var j = 0; j < btns.length; j++) btns[j].disabled = false;
+        alert('提交失败，请稍后再试');
+      }
+    }).catch(function (e) {
+      console.error('反馈提交失败：', e);
+      for (var k = 0; k < btns.length; k++) btns[k].disabled = false;
+      alert('网络错误，请稍后再试');
+    });
+  }
+
   function loadFromStorage() {
     try {
       var rawCustom = localStorage.getItem(KEY_CUSTOM);
@@ -834,6 +948,7 @@ document.addEventListener('DOMContentLoaded', function () {
   function render() {
     var all = getAllSpots();
     var keyword = currentSearch.trim().toLowerCase();
+    var feedbackSent = loadFeedbackSent();
 
     var filtered = all.filter(function (spot) {
       if (currentFilter !== 'all' && spot.type !== currentFilter) return false;
@@ -858,6 +973,7 @@ document.addEventListener('DOMContentLoaded', function () {
       var visited = visitedIds.has(spot.id);
       var isCustom = spot.id.indexOf('custom-') === 0;
       var emoji = TYPE_EMOJI[spot.type] || '📍';
+      var sentType = feedbackSent[spot.id];
 
       html += '<div class="card" data-spot-id="' + escapeHtml(spot.id) + '">';
 
@@ -883,6 +999,20 @@ document.addEventListener('DOMContentLoaded', function () {
       }
       html += '    </div>';
       html += '  </div>';
+
+      // 反馈行
+      if (sentType) {
+        html += '<div class="feedback-row done">';
+        html += '  <span class="fb-thanks">🙏 感谢反馈（已标记为：' + escapeHtml(sentType) + '）</span>';
+        html += '</div>';
+      } else {
+        html += '<div class="feedback-row">';
+        html += '  <span class="fb-label">这家店还在吗？</span>';
+        html += '  <button type="button" class="fb-btn fb-ok" data-action="fb-ok" data-id="' + escapeHtml(spot.id) + '">✅ 还在</button>';
+        html += '  <button type="button" class="fb-btn fb-gone" data-action="fb-gone" data-id="' + escapeHtml(spot.id) + '">❌ 不在了</button>';
+        html += '</div>';
+      }
+
       html += '</div>';
     }
     cardList.innerHTML = html;
@@ -1230,6 +1360,11 @@ document.addEventListener('DOMContentLoaded', function () {
       var action = btn.dataset.action;
       var id = btn.dataset.id;
       if (!id) return;
+
+      if (action === 'fb-ok' || action === 'fb-gone') {
+        handleFeedback(id, action === 'fb-ok' ? '还在' : '不在了', btn);
+        return;
+      }
 
       if (action === 'visit') {
         if (visitedIds.has(id)) {
