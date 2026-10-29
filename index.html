@@ -32,6 +32,18 @@
     margin-bottom: 18px;
     position: relative;
   }
+  .map-error {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    padding: 20px;
+    text-align: center;
+    color: #8a7d6e;
+    font-size: 0.85rem;
+    line-height: 1.6;
+  }
   #mapHint {
     display: none;
     position: absolute;
@@ -172,7 +184,6 @@
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
     border-color: #e3dbd1;
   }
-  /* 缩略图 */
   .card-thumb {
     width: 84px;
     min-width: 84px;
@@ -271,6 +282,21 @@
     transition: all 0.15s;
   }
   .del-btn:hover { color: #b85c5c; background: #faecec; border-color: #f0caca; }
+  .nav-btn {
+    padding: 5px 12px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: #fff;
+    background: #2d2a24;
+    border: none;
+    border-radius: 30px;
+    text-decoration: none;
+    display: inline-block;
+    transition: background 0.15s;
+    white-space: nowrap;
+  }
+  .nav-btn:hover { background: #403b33; }
+
   .empty {
     text-align: center;
     padding: 40px 16px;
@@ -341,7 +367,6 @@
   }
   .form-row > * { flex: 1; }
 
-  /* ===== 图片字段 ===== */
   .img-field {
     display: flex;
     gap: 12px;
@@ -491,7 +516,6 @@
   }
   .cancel-btn:hover { background: #f3efe9; }
 
-  /* 信息窗图片 */
   .iw-box { padding: 0; min-width: 180px; max-width: 240px; }
   .iw-img {
     width: 100%;
@@ -509,6 +533,18 @@
   .iw-type { background: #f0e8e0; color: #7a624c; }
   .iw-source { background: #e9f0e9; color: #3c6e4b; }
   .iw-desc { font-size: 0.82rem; color: #6e6358; line-height: 1.4; }
+  .iw-actions { margin-top: 8px; }
+  .iw-nav-btn {
+    display: inline-block;
+    padding: 6px 14px;
+    background: #2d2a24;
+    color: #fff;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    text-decoration: none;
+    transition: background 0.15s;
+  }
+  .iw-nav-btn:hover { background: #403b33; }
 
   @media (max-width: 480px) {
     h1 { font-size: 1.35rem; }
@@ -578,7 +614,6 @@
       </div>
       <textarea id="newDesc" placeholder="简短描述（选填）" maxlength="120"></textarea>
 
-      <!-- 图片 -->
       <div class="img-field">
         <div class="img-preview" id="imgPreview">暂无图片</div>
         <div class="img-controls">
@@ -626,12 +661,12 @@ document.addEventListener('DOMContentLoaded', function () {
   var DEFAULT_LNG = 102.712;
   var DEFAULT_LAT = 25.040;
 
-  /*
-    BASE_SPOTS 说明：
-    每个点可以加 img 字段放图片网址，例如：
-    { id: 'b1', ..., img: 'https://xxx.com/a.jpg' }
-    没有 img 字段的点，卡片会显示分类 emoji 占位块。
-  */
+  /* ===== 双 Key：本地用本地 Key，线上用线上 Key ===== */
+  var AMAP_KEY_ONLINE = '0aad41a8ae10301cf0fa27f245671916';
+  var AMAP_KEY_LOCAL  = 'ca9ceb52b3cdca54bd156685d3940e72';
+  var isLocalHost = (location.hostname === '127.0.0.1' || location.hostname === 'localhost');
+  var AMAP_KEY = isLocalHost ? AMAP_KEY_LOCAL : AMAP_KEY_ONLINE;
+
   var BASE_SPOTS = [
     { id: 'b1',  name: '光宗三号咖啡',     type: '咖啡',   source: '小红书', desc: '翠湖边的老宅咖啡馆，桂花拿铁是招牌，午后光影很好拍。', lng: 102.7045, lat: 25.0480 },
     { id: 'b2',  name: '不在庙堂',         type: '咖啡',   source: '抖音',   desc: '居民楼下的日式喫茶店，厚乳拿铁和提拉米苏都推荐。',     lng: 102.7180, lat: 25.0520 },
@@ -663,7 +698,7 @@ document.addEventListener('DOMContentLoaded', function () {
   var currentSource = 'all';
   var currentSearch = '';
   var editingId = null;
-  var formImg = '';   // 当前表单里的图片（base64 或 URL）
+  var formImg = '';
 
   var map = null;
   var AMapRef = null;
@@ -721,6 +756,13 @@ document.addEventListener('DOMContentLoaded', function () {
     return null;
   }
 
+  function getNavUrl(spot) {
+    var lng = (typeof spot.lng === 'number') ? spot.lng : DEFAULT_LNG;
+    var lat = (typeof spot.lat === 'number') ? spot.lat : DEFAULT_LAT;
+    var name = encodeURIComponent(spot.name || '目的地');
+    return 'https://uri.amap.com/navigation?to=' + lng + ',' + lat + ',' + name + '&mode=car&callnative=1';
+  }
+
   function loadFromStorage() {
     try {
       var rawCustom = localStorage.getItem(KEY_CUSTOM);
@@ -758,7 +800,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
-  // 返回 true 表示保存成功
   function saveCustomSpots() {
     try {
       localStorage.setItem(KEY_CUSTOM, JSON.stringify(customSpots));
@@ -835,6 +876,7 @@ document.addEventListener('DOMContentLoaded', function () {
       html += '    <div class="card-desc">' + escapeHtml(spot.desc || '') + '</div>';
       html += '    <div class="card-actions">';
       html += '      <button type="button" class="visit-btn' + (visited ? ' visited' : '') + '" data-action="visit" data-id="' + escapeHtml(spot.id) + '">' + (visited ? '✓ 已去过' : '我去过') + '</button>';
+      html += '      <a class="nav-btn" href="' + getNavUrl(spot) + '" target="_blank" rel="noopener">🧭 导航</a>';
       if (isCustom) {
         html += '      <button type="button" class="edit-btn" data-action="edit" data-id="' + escapeHtml(spot.id) + '">编辑</button>';
         html += '      <button type="button" class="del-btn" data-action="delete" data-id="' + escapeHtml(spot.id) + '">删除</button>';
@@ -872,12 +914,17 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   function initMap() {
-    if (typeof AMapLoader === 'undefined') {
-      console.error('AMapLoader 未加载，请检查 loader.js');
+    if (!mapContainer) {
+      console.error('地图容器 #mapContainer 不存在');
       return;
     }
+    if (typeof AMapLoader === 'undefined') {
+      mapContainer.innerHTML = '<div class="map-error">地图加载失败<br>AMapLoader 未定义<br>请检查网络或 loader.js 是否被拦截</div>';
+      return;
+    }
+    console.log('当前使用的 Key：', isLocalHost ? '本地 Key' : '线上 Key');
     AMapLoader.load({
-      key: '0aad41a8ae10301cf0fa27f245671916',
+      key: AMAP_KEY,
       version: '2.0',
       plugins: ['AMap.InfoWindow', 'AMap.Marker', 'AMap.Geolocation']
     }).then(function (AMap) {
@@ -919,6 +966,10 @@ document.addEventListener('DOMContentLoaded', function () {
       console.log('地图加载成功');
     }).catch(function (e) {
       console.error('地图加载失败：', e);
+      var msg = '地图加载失败';
+      if (e && e.message) msg += '<br>' + e.message;
+      msg += '<br>常见原因：<br>1. 本地 Key 的白名单没留空<br>2. Key 配置错误<br>3. 网络问题';
+      mapContainer.innerHTML = '<div class="map-error">' + msg + '</div>';
     });
   }
 
@@ -935,6 +986,9 @@ document.addEventListener('DOMContentLoaded', function () {
     html += '<span class="iw-badge iw-source">' + escapeHtml(spot.source || '其他') + '</span>';
     html += '</div>';
     html += '<div class="iw-desc">' + escapeHtml(spot.desc || '') + '</div>';
+    html += '<div class="iw-actions">';
+    html += '<a class="iw-nav-btn" href="' + getNavUrl(spot) + '" target="_blank" rel="noopener">🧭 导航到这里</a>';
+    html += '</div>';
     html += '</div></div>';
     return html;
   }
@@ -1018,7 +1072,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
-  /* ========== 图片：预览与压缩 ========== */
   function updateImgPreview() {
     if (formImg) {
       imgPreview.innerHTML = '<img src="' + escapeHtml(formImg) + '" alt="" onerror="this.parentNode.innerHTML=\'图片加载失败\'">';
@@ -1029,7 +1082,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function setFormImg(val) {
     formImg = val || '';
-    if (!formImg.startsWith('data:')) {
+    if (formImg && formImg.indexOf('data:') !== 0) {
       imgUrl.value = formImg;
     } else {
       imgUrl.value = '';
@@ -1101,7 +1154,6 @@ document.addEventListener('DOMContentLoaded', function () {
     imgFile.value = '';
   });
 
-  /* ========== 编辑模式 ========== */
   function enterEditMode(spot) {
     if (!spot) return;
     resetPickState();
@@ -1218,6 +1270,8 @@ document.addEventListener('DOMContentLoaded', function () {
       return;
     }
 
+    if (e.target.closest('.nav-btn')) return;
+
     var card = e.target.closest('.card');
     if (!card) return;
     var spotId = card.dataset.spotId;
@@ -1308,7 +1362,6 @@ document.addEventListener('DOMContentLoaded', function () {
       return;
     }
 
-    // === 编辑模式 ===
     if (editingId) {
       var target = null;
       for (var i = 0; i < customSpots.length; i++) {
@@ -1319,7 +1372,6 @@ document.addEventListener('DOMContentLoaded', function () {
         return;
       }
 
-      // 先备份，写入失败可回滚
       var backup = {
         name: target.name,
         type: target.type,
@@ -1339,7 +1391,6 @@ document.addEventListener('DOMContentLoaded', function () {
       target.img = formImg;
 
       if (!saveCustomSpots()) {
-        // 回滚
         target.name = backup.name;
         target.type = backup.type;
         target.source = backup.source;
@@ -1358,7 +1409,6 @@ document.addEventListener('DOMContentLoaded', function () {
       return;
     }
 
-    // === 新增模式 ===
     var newSpot = {
       id: 'custom-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8),
       name: name,
