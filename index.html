@@ -8,29 +8,32 @@
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
     font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-    background: #f7f5f2;
-    color: #2d2a24;
+    background: linear-gradient(160deg, #fdf2f8 0%, #eef2ff 55%, #f0fdfa 100%);
+    background-attachment: fixed;
+    color: #3d3557;
     padding: 16px 12px 40px;
     min-height: 100vh;
   }
   .container {
     max-width: 720px;
     margin: 0 auto;
-    background: #ffffff;
-    border-radius: 20px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+    background: rgba(255, 255, 255, 0.92);
+    border-radius: 28px;
+    box-shadow: 0 12px 40px rgba(150, 130, 200, 0.15);
     padding: 0 0 24px;
-    border: 1px solid #f0ebe5;
+    border: 1px solid rgba(255, 255, 255, 0.6);
     overflow: hidden;
+    backdrop-filter: blur(6px);
   }
   #mapContainer {
     width: 100%;
     height: 42vh;
     min-height: 240px;
     background: #e8e2da;
-    border-bottom: 1px solid #f0ebe5;
     margin-bottom: 18px;
     position: relative;
+    border-radius: 0 0 24px 24px;
+    overflow: hidden;
   }
   .map-error {
     display: flex;
@@ -40,7 +43,7 @@
     height: 100%;
     padding: 20px;
     text-align: center;
-    color: #8a7d6e;
+    color: #8a7d9e;
     font-size: 0.85rem;
     line-height: 1.6;
   }
@@ -50,18 +53,85 @@
     top: 12px;
     left: 50%;
     transform: translateX(-50%);
-    background: rgba(45, 42, 36, 0.88);
+    background: rgba(91, 75, 138, 0.9);
     color: #fff;
     font-size: 0.85rem;
     padding: 8px 16px;
     border-radius: 30px;
     z-index: 100;
     white-space: nowrap;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    box-shadow: 0 4px 12px rgba(150, 130, 200, 0.3);
     pointer-events: none;
   }
   #mapHint.show { display: block; }
   #mapHint.done { background: rgba(47, 107, 58, 0.92); }
+
+  /* ===== 地图右上角：我的位置按钮 ===== */
+  .my-loc-btn {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid #e8e2f0;
+    box-shadow: 0 2px 8px rgba(150, 130, 200, 0.2);
+    cursor: pointer;
+    font-size: 1.15rem;
+    z-index: 90;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    font-family: inherit;
+    line-height: 1;
+  }
+  .my-loc-btn:hover {
+    background: #fff;
+    box-shadow: 0 4px 14px rgba(150, 130, 200, 0.35);
+    transform: scale(1.06);
+  }
+  .my-loc-btn:active { transform: scale(0.96); }
+  .my-loc-btn.loading {
+    cursor: wait;
+    opacity: 0.75;
+    animation: myLocSpin 1.2s linear infinite;
+  }
+  @keyframes myLocSpin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  /* ===== 地图上的"我的位置"脉冲标记 ===== */
+  .my-loc-dot {
+    position: relative;
+    width: 24px;
+    height: 24px;
+  }
+  .my-loc-pulse {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: rgba(66, 133, 244, 0.35);
+    animation: locPulse 2s ease-out infinite;
+  }
+  .my-loc-core {
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #4285f4;
+    border: 2px solid #ffffff;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  }
+  @keyframes locPulse {
+    0% { transform: scale(0.7); opacity: 0.85; }
+    100% { transform: scale(2.2); opacity: 0; }
+  }
 
   .content-inner { padding: 0 18px; }
 
@@ -76,7 +146,8 @@
   h1 {
     font-size: 1.6rem;
     font-weight: 700;
-    color: #2d2a24;
+    color: #3d3557;
+    letter-spacing: -0.01em;
   }
   .stats-badge {
     display: inline-flex;
@@ -84,9 +155,9 @@
     gap: 6px;
     font-size: 0.8rem;
     font-weight: 550;
-    color: #2f6b3a;
-    background: #e8f0e8;
-    border: 1px solid #cfe0cf;
+    color: #5b4b8a;
+    background: #f3eefc;
+    border: 1px solid #e3d9f5;
     padding: 5px 12px;
     border-radius: 30px;
     white-space: nowrap;
@@ -98,18 +169,19 @@
     width: 100%;
     padding: 12px 16px 12px 42px;
     font-size: 1rem;
-    border: 1.5px solid #e7e1d9;
+    border: 1.5px solid #e8e2f0;
     border-radius: 40px;
-    background: #fcfaf8;
+    background: #fbfaff;
     outline: none;
-    color: #2d2a24;
+    color: #3d3557;
     transition: border-color 0.15s, box-shadow 0.15s;
   }
   .search-box input:focus {
-    border-color: #c9ab8b;
-    box-shadow: 0 0 0 3px rgba(193, 162, 128, 0.15);
+    border-color: #b9a8e0;
+    box-shadow: 0 0 0 3px rgba(185, 168, 224, 0.2);
     background: #fff;
   }
+  .search-box input::placeholder { color: #b0a6c8; }
   .search-box::before {
     content: '🔍';
     position: absolute;
@@ -117,7 +189,7 @@
     top: 50%;
     transform: translateY(-50%);
     font-size: 1rem;
-    opacity: 0.55;
+    opacity: 0.6;
     pointer-events: none;
   }
 
@@ -131,7 +203,7 @@
   .filter-row:last-of-type { margin-bottom: 18px; }
   .filter-label {
     font-size: 0.78rem;
-    color: #a69c90;
+    color: #a99ec4;
     font-weight: 500;
     flex-shrink: 0;
     margin-right: 2px;
@@ -142,25 +214,27 @@
     padding: 7px 14px;
     font-size: 0.88rem;
     font-weight: 500;
-    color: #5e554a;
-    background: transparent;
-    border: 1.5px solid #e7e1d9;
+    color: #5e5478;
+    background: rgba(255, 255, 255, 0.7);
+    border: 1.5px solid #e8e2f0;
     border-radius: 30px;
     cursor: pointer;
     transition: all 0.15s;
     white-space: nowrap;
   }
   .filter-btn:hover,
-  .source-btn:hover { background: #f3efe9; border-color: #d6cbbc; }
+  .source-btn:hover { background: #f3eefc; border-color: #d8cdea; }
   .filter-btn.active {
-    background: #2d2a24;
-    border-color: #2d2a24;
+    background: #5b4b8a;
+    border-color: #5b4b8a;
     color: #fff;
+    box-shadow: 0 3px 10px rgba(91, 75, 138, 0.25);
   }
   .source-btn.active {
-    background: #7a624c;
-    border-color: #7a624c;
+    background: #d97ba8;
+    border-color: #d97ba8;
     color: #fff;
+    box-shadow: 0 3px 10px rgba(217, 123, 168, 0.25);
   }
 
   .card-list {
@@ -172,26 +246,28 @@
   .card {
     display: flex;
     gap: 12px;
-    border: 1px solid #f0ebe5;
-    border-radius: 14px;
+    border: 1px solid #e8e2f0;
+    border-radius: 20px;
     padding: 12px;
-    background: #fff;
-    transition: box-shadow 0.15s, border-color 0.15s;
+    background: #ffffff;
+    box-shadow: 0 2px 10px rgba(150, 130, 200, 0.06);
+    transition: box-shadow 0.2s, border-color 0.2s, transform 0.2s;
     cursor: pointer;
     overflow: hidden;
     flex-wrap: wrap;
   }
   .card:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
-    border-color: #e3dbd1;
+    box-shadow: 0 8px 24px rgba(150, 130, 200, 0.14);
+    border-color: #d8cdea;
+    transform: translateY(-2px);
   }
   .card-thumb {
     width: 84px;
     min-width: 84px;
     height: 84px;
-    border-radius: 12px;
+    border-radius: 14px;
     object-fit: cover;
-    background: #f3efe9;
+    background: #f3eefc;
     display: block;
   }
   .card-thumb.placeholder {
@@ -199,8 +275,8 @@
     align-items: center;
     justify-content: center;
     font-size: 1.9rem;
-    background: #f0e8e0;
-    border: 1px dashed #e0d6cb;
+    background: linear-gradient(135deg, #f3eefc, #fdeaf3);
+    border: 1px dashed #d8cdea;
   }
   .card-main {
     flex: 1;
@@ -218,7 +294,7 @@
   .card-title .name {
     font-size: 1.08rem;
     font-weight: 650;
-    color: #2d2a24;
+    color: #3d3557;
   }
   .badge {
     font-size: 0.72rem;
@@ -227,11 +303,11 @@
     font-weight: 500;
     white-space: nowrap;
   }
-  .badge.type { background: #f0e8e0; color: #7a624c; }
-  .badge.source { background: #e9f0e9; color: #3c6e4b; }
+  .badge.type { background: #f3eefc; color: #6b5698; }
+  .badge.source { background: #fdeaf3; color: #b35580; }
   .card-desc {
     font-size: 0.88rem;
-    color: #6e6358;
+    color: #6e6484;
     line-height: 1.5;
     margin-bottom: 10px;
     word-break: break-word;
@@ -247,14 +323,14 @@
     padding: 5px 14px;
     font-size: 0.8rem;
     font-weight: 500;
-    color: #8a7d6e;
+    color: #8a7da0;
     background: transparent;
-    border: 1.2px solid #e0d6cb;
+    border: 1.2px solid #e3d9f5;
     border-radius: 30px;
     cursor: pointer;
     transition: all 0.15s;
   }
-  .visit-btn:hover { background: #f3efe9; border-color: #cbbeb0; }
+  .visit-btn:hover { background: #f3eefc; border-color: #c9b8e8; }
   .visit-btn.visited {
     background: #e8f0e8;
     border-color: #9bb89b;
@@ -264,18 +340,18 @@
     padding: 5px 12px;
     font-size: 0.8rem;
     font-weight: 500;
-    color: #7a624c;
+    color: #6b5698;
     background: transparent;
-    border: 1.2px solid #e7e1d9;
+    border: 1.2px solid #e3d9f5;
     border-radius: 30px;
     cursor: pointer;
     transition: all 0.15s;
   }
-  .edit-btn:hover { background: #f3efe9; border-color: #c9ab8b; }
+  .edit-btn:hover { background: #f3eefc; border-color: #b9a8e0; }
   .del-btn {
     padding: 5px 12px;
     font-size: 0.8rem;
-    color: #c2b6a8;
+    color: #c9bdd4;
     background: transparent;
     border: 1.2px solid transparent;
     border-radius: 30px;
@@ -288,15 +364,15 @@
     font-size: 0.8rem;
     font-weight: 500;
     color: #fff;
-    background: #2d2a24;
+    background: #5b4b8a;
     border: none;
     border-radius: 30px;
     text-decoration: none;
     display: inline-block;
-    transition: background 0.15s;
+    transition: background 0.15s, box-shadow 0.15s;
     white-space: nowrap;
   }
-  .nav-btn:hover { background: #403b33; }
+  .nav-btn:hover { background: #4a3d73; box-shadow: 0 3px 10px rgba(91, 75, 138, 0.25); }
 
   .feedback-row {
     width: 100%;
@@ -305,72 +381,155 @@
     gap: 8px;
     margin-top: 10px;
     padding-top: 10px;
-    border-top: 1px dashed #f0ebe5;
+    border-top: 1px dashed #efe9f7;
     flex-wrap: wrap;
     font-size: 0.78rem;
   }
-  .fb-label { color: #a69c90; }
+  .fb-label { color: #a99ec4; }
   .fb-btn {
     padding: 3px 12px;
     font-size: 0.76rem;
-    color: #6b5f52;
+    color: #6b5f7a;
     background: transparent;
-    border: 1px solid #e7e1d9;
+    border: 1px solid #e8e2f0;
     border-radius: 20px;
     cursor: pointer;
     transition: all 0.15s;
     font-family: inherit;
   }
-  .fb-btn:hover { background: #f3efe9; }
+  .fb-btn:hover { background: #f3eefc; }
   .fb-btn.fb-ok:hover { color: #2f6b3a; border-color: #9bb89b; background: #e8f0e8; }
   .fb-btn.fb-gone:hover { color: #b85c5c; border-color: #f0caca; background: #faecec; }
   .fb-btn:disabled { opacity: 0.5; cursor: not-allowed; }
   .fb-thanks {
     font-size: 0.76rem;
-    color: #7a624c;
-    background: #faf7f2;
+    color: #6b5698;
+    background: #f3eefc;
     padding: 4px 12px;
     border-radius: 20px;
   }
 
+  /* ===== 空状态插画 ===== */
   .empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     text-align: center;
-    padding: 40px 16px;
-    color: #a69c90;
-    font-size: 0.95rem;
-    background: #fcfaf8;
-    border: 1px dashed #e3dbd1;
-    border-radius: 14px;
+    padding: 36px 20px 30px;
+    background: linear-gradient(160deg, #fbfaff 0%, #fdf8fb 100%);
+    border: 1px dashed #e3d9f5;
+    border-radius: 24px;
   }
+  .empty-illus {
+    position: relative;
+    width: 120px;
+    height: 120px;
+    margin-bottom: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .empty-circle {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #f3eefc, #fdeaf3 70%);
+    box-shadow: inset 0 0 0 1px rgba(216, 205, 234, 0.5);
+  }
+  .empty-emoji {
+    position: relative;
+    font-size: 3.2rem;
+    line-height: 1;
+    animation: emptyFloat 3.2s ease-in-out infinite;
+  }
+  .empty-dot {
+    position: absolute;
+    border-radius: 50%;
+    opacity: 0.75;
+  }
+  .empty-dot.d1 {
+    width: 10px; height: 10px;
+    background: #d97ba8;
+    top: 6px; right: 10px;
+    animation: emptyFloat 3.6s ease-in-out infinite;
+  }
+  .empty-dot.d2 {
+    width: 7px; height: 7px;
+    background: #5b4b8a;
+    bottom: 14px; left: 4px;
+    animation: emptyFloat 4.2s ease-in-out infinite;
+    animation-delay: 0.4s;
+  }
+  .empty-dot.d3 {
+    width: 6px; height: 6px;
+    background: #b9a8e0;
+    top: 22px; left: 8px;
+    animation: emptyFloat 3.9s ease-in-out infinite;
+    animation-delay: 0.8s;
+  }
+  @keyframes emptyFloat {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+  }
+  .empty-title {
+    font-size: 1rem;
+    font-weight: 650;
+    color: #3d3557;
+    margin-bottom: 6px;
+  }
+  .empty-desc {
+    font-size: 0.83rem;
+    color: #a99ec4;
+    line-height: 1.5;
+    margin-bottom: 16px;
+    max-width: 260px;
+  }
+  .empty-reset-btn {
+    padding: 8px 22px;
+    font-size: 0.85rem;
+    font-weight: 550;
+    color: #fff;
+    background: #5b4b8a;
+    border: none;
+    border-radius: 30px;
+    cursor: pointer;
+    transition: background 0.15s, box-shadow 0.15s;
+    font-family: inherit;
+  }
+  .empty-reset-btn:hover {
+    background: #4a3d73;
+    box-shadow: 0 4px 12px rgba(91, 75, 138, 0.28);
+  }
+
   .add-toggle-btn {
     width: 100%;
     padding: 12px;
     font-size: 0.95rem;
     font-weight: 500;
-    color: #6b5f52;
-    background: #faf7f2;
-    border: 1.5px dashed #d9cec1;
+    color: #6b5698;
+    background: #faf8ff;
+    border: 1.5px dashed #d8cdea;
     border-radius: 40px;
     cursor: pointer;
     transition: all 0.15s;
     text-align: center;
     margin-top: 10px;
   }
-  .add-toggle-btn:hover { background: #f3efe9; border-color: #c9bcae; }
+  .add-toggle-btn:hover { background: #f3eefc; border-color: #b9a8e0; }
   .add-toggle-btn.editing {
-    background: #f0e8e0;
-    border-color: #c9ab8b;
+    background: #f3eefc;
+    border-color: #b9a8e0;
     border-style: solid;
-    color: #7a624c;
+    color: #5b4b8a;
     font-weight: 550;
   }
   .add-form {
     display: none;
     margin-top: 14px;
     padding: 16px;
-    background: #fcfaf8;
-    border: 1px solid #f0ebe5;
-    border-radius: 16px;
+    background: #fbfaff;
+    border: 1px solid #efe9f7;
+    border-radius: 18px;
     flex-direction: column;
     gap: 10px;
   }
@@ -382,17 +541,17 @@
     padding: 10px 14px;
     font-size: 0.9rem;
     font-family: inherit;
-    border: 1.3px solid #e7e1d9;
+    border: 1.3px solid #e8e2f0;
     border-radius: 12px;
     background: #fff;
     outline: none;
-    color: #2d2a24;
+    color: #3d3557;
     transition: border-color 0.15s;
   }
   .add-form input[type="text"]:focus,
   .add-form select:focus,
   .add-form textarea:focus {
-    border-color: #c9ab8b;
+    border-color: #b9a8e0;
   }
   .add-form textarea {
     resize: vertical;
@@ -409,7 +568,7 @@
     gap: 12px;
     padding: 12px;
     background: #fff;
-    border: 1.3px solid #e7e1d9;
+    border: 1.3px solid #e8e2f0;
     border-radius: 12px;
     align-items: flex-start;
   }
@@ -417,14 +576,14 @@
     width: 96px;
     min-width: 96px;
     height: 96px;
-    border-radius: 10px;
-    background: #f3efe9;
-    border: 1px dashed #e0d6cb;
+    border-radius: 12px;
+    background: #f3eefc;
+    border: 1px dashed #d8cdea;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 0.72rem;
-    color: #b8aea2;
+    color: #b0a6c8;
     overflow: hidden;
     text-align: center;
     padding: 4px;
@@ -433,7 +592,7 @@
     width: 100%;
     height: 100%;
     object-fit: cover;
-    border-radius: 8px;
+    border-radius: 10px;
   }
   .img-controls {
     flex: 1;
@@ -452,7 +611,7 @@
     font-size: 0.8rem;
     font-weight: 500;
     color: #fff;
-    background: #7a624c;
+    background: #d97ba8;
     border: none;
     border-radius: 30px;
     cursor: pointer;
@@ -460,13 +619,13 @@
     white-space: nowrap;
     display: inline-block;
   }
-  .img-upload-btn:hover { background: #6a5440; }
+  .img-upload-btn:hover { background: #c96a96; }
   .img-clear-btn {
     padding: 7px 12px;
     font-size: 0.8rem;
-    color: #a69c90;
+    color: #a99ec4;
     background: transparent;
-    border: 1.2px solid #e7e1d9;
+    border: 1.2px solid #e8e2f0;
     border-radius: 30px;
     cursor: pointer;
     transition: all 0.15s;
@@ -478,16 +637,16 @@
     padding: 8px 12px;
     font-size: 0.82rem;
     font-family: inherit;
-    border: 1.3px solid #e7e1d9;
+    border: 1.3px solid #e8e2f0;
     border-radius: 10px;
     background: #fff;
     outline: none;
-    color: #2d2a24;
+    color: #3d3557;
   }
-  .img-url-input:focus { border-color: #c9ab8b; }
+  .img-url-input:focus { border-color: #b9a8e0; }
   .img-tip {
     font-size: 0.72rem;
-    color: #b8aea2;
+    color: #b0a6c8;
     line-height: 1.4;
   }
 
@@ -497,20 +656,20 @@
     gap: 8px;
     padding: 10px 14px;
     background: #fff;
-    border: 1.3px solid #e7e1d9;
+    border: 1.3px solid #e8e2f0;
     border-radius: 12px;
     font-size: 0.85rem;
     flex-wrap: wrap;
   }
   .location-row .loc-icon { font-size: 1rem; }
-  .location-row .loc-text { flex: 1; min-width: 120px; color: #8a7d6e; }
+  .location-row .loc-text { flex: 1; min-width: 120px; color: #8a7da0; }
   .location-row.picked { border-color: #9bb89b; background: #f2f8f2; }
   .location-row.picked .loc-text { color: #2f6b3a; }
   .loc-pick-btn {
     padding: 5px 12px;
     font-size: 0.78rem;
-    color: #6b5f52;
-    background: #f3efe9;
+    color: #6b5698;
+    background: #f3eefc;
     border: none;
     border-radius: 20px;
     cursor: pointer;
@@ -518,13 +677,13 @@
     flex-shrink: 0;
     transition: background 0.15s;
   }
-  .loc-pick-btn:hover { background: #e8e1d8; }
+  .loc-pick-btn:hover { background: #e8e2f0; }
   .loc-pick-btn:disabled { opacity: 0.6; cursor: wait; }
   .loc-copy-btn {
     padding: 5px 12px;
     font-size: 0.78rem;
     color: #fff;
-    background: #7a624c;
+    background: #d97ba8;
     border: none;
     border-radius: 20px;
     cursor: pointer;
@@ -532,7 +691,7 @@
     flex-shrink: 0;
     transition: background 0.15s;
   }
-  .loc-copy-btn:hover { background: #6a5440; }
+  .loc-copy-btn:hover { background: #c96a96; }
   .loc-copy-btn.copied { background: #2f6b3a; }
 
   .form-btns {
@@ -546,44 +705,43 @@
     font-size: 0.92rem;
     font-weight: 600;
     color: #fff;
-    background: #2d2a24;
+    background: #5b4b8a;
     border: none;
     border-radius: 40px;
     cursor: pointer;
-    transition: background 0.15s;
+    transition: background 0.15s, box-shadow 0.15s;
   }
-  .save-btn:hover { background: #403b33; }
+  .save-btn:hover { background: #4a3d73; box-shadow: 0 3px 10px rgba(91, 75, 138, 0.25); }
   .cancel-btn {
     flex: 1;
     padding: 11px;
     font-size: 0.92rem;
     font-weight: 500;
-    color: #7a6e60;
+    color: #7a6e90;
     background: transparent;
-    border: 1.3px solid #e7e1d9;
+    border: 1.3px solid #e8e2f0;
     border-radius: 40px;
     cursor: pointer;
     transition: all 0.15s;
   }
-  .cancel-btn:hover { background: #f3efe9; }
+  .cancel-btn:hover { background: #f3eefc; }
 
-  /* ===== 数据导出/导入 ===== */
   .data-tools {
     margin-top: 18px;
     padding: 14px 16px;
-    background: #faf7f2;
-    border: 1px solid #f0ebe5;
-    border-radius: 14px;
+    background: #fbfaff;
+    border: 1px solid #efe9f7;
+    border-radius: 16px;
   }
   .data-tools-title {
     font-size: 0.88rem;
     font-weight: 600;
-    color: #5e554a;
+    color: #5e5478;
     margin-bottom: 4px;
   }
   .data-tools-desc {
     font-size: 0.76rem;
-    color: #a69c90;
+    color: #a99ec4;
     line-height: 1.5;
     margin-bottom: 10px;
   }
@@ -599,9 +757,9 @@
     font-size: 0.82rem;
     font-weight: 500;
     text-align: center;
-    color: #6b5f52;
+    color: #6b5698;
     background: #fff;
-    border: 1.2px solid #e7e1d9;
+    border: 1.2px solid #e8e2f0;
     border-radius: 30px;
     cursor: pointer;
     transition: all 0.15s;
@@ -609,47 +767,46 @@
     display: block;
     box-sizing: border-box;
   }
-  .data-btn:hover { background: #f3efe9; border-color: #d6cbbc; }
+  .data-btn:hover { background: #f3eefc; border-color: #d8cdea; }
 
-  /* ===== Tally 推荐区（折叠式） ===== */
   .suggest-toggle-btn {
     width: 100%;
     padding: 12px;
     font-size: 0.95rem;
     font-weight: 500;
     color: #fff;
-    background: #7a624c;
-    border: 1.5px solid #7a624c;
+    background: #d97ba8;
+    border: 1.5px solid #d97ba8;
     border-radius: 40px;
     cursor: pointer;
     transition: all 0.15s;
     text-align: center;
     margin-top: 10px;
   }
-  .suggest-toggle-btn:hover { background: #6a5440; border-color: #6a5440; }
+  .suggest-toggle-btn:hover { background: #c96a96; border-color: #c96a96; }
   .suggest-toggle-btn.open {
-    background: #f0e8e0;
-    border-color: #c9ab8b;
-    color: #7a624c;
+    background: #fdeaf3;
+    border-color: #e8b3cb;
+    color: #b35580;
   }
   .suggest-wrapper {
     display: none;
     margin-top: 14px;
     padding: 16px;
-    background: #fdf8f4;
-    border: 1px solid #efe0d3;
-    border-radius: 16px;
+    background: #fdf8fb;
+    border: 1px solid #f3e3ec;
+    border-radius: 18px;
   }
   .suggest-wrapper.open { display: block; }
   .suggest-wrapper .tally-subtitle {
     font-size: 0.8rem;
-    color: #a69c90;
+    color: #a99ec4;
     margin-bottom: 12px;
     line-height: 1.5;
   }
   .suggest-wrapper iframe {
-    border-radius: 12px;
-    border: 1px solid #f0ebe5 !important;
+    border-radius: 14px;
+    border: 1px solid #efe9f7 !important;
     background: #fff;
     display: block;
     width: 100%;
@@ -659,12 +816,12 @@
   .sug-loc-title {
     font-size: 0.8rem;
     font-weight: 550;
-    color: #7a624c;
+    color: #b35580;
     margin-bottom: 8px;
   }
   .sug-loc-tip {
     font-size: 0.72rem;
-    color: #b8aea2;
+    color: #b0a6c8;
     margin-top: 6px;
     line-height: 1.4;
   }
@@ -677,37 +834,39 @@
     border-radius: 8px 8px 0 0;
     display: block;
     margin-bottom: 8px;
-    background: #f3efe9;
+    background: #f3eefc;
   }
   .iw-body { padding: 0 4px 4px; }
-  .iw-name { font-size: 1rem; font-weight: 650; color: #2d2a24; margin-bottom: 4px; }
+  .iw-name { font-size: 1rem; font-weight: 650; color: #3d3557; margin-bottom: 4px; }
   .iw-badges { display: flex; gap: 6px; margin-bottom: 6px; flex-wrap: wrap; }
   .iw-badge { font-size: 0.7rem; padding: 2px 8px; border-radius: 30px; }
-  .iw-type { background: #f0e8e0; color: #7a624c; }
-  .iw-source { background: #e9f0e9; color: #3c6e4b; }
-  .iw-desc { font-size: 0.82rem; color: #6e6358; line-height: 1.4; }
+  .iw-type { background: #f3eefc; color: #6b5698; }
+  .iw-source { background: #fdeaf3; color: #b35580; }
+  .iw-desc { font-size: 0.82rem; color: #6e6484; line-height: 1.4; }
   .iw-actions { margin-top: 8px; }
   .iw-nav-btn {
     display: inline-block;
     padding: 6px 14px;
-    background: #2d2a24;
+    background: #5b4b8a;
     color: #fff;
     border-radius: 20px;
     font-size: 0.8rem;
     text-decoration: none;
     transition: background 0.15s;
   }
-  .iw-nav-btn:hover { background: #403b33; }
+  .iw-nav-btn:hover { background: #4a3d73; }
 
   @media (max-width: 480px) {
     h1 { font-size: 1.35rem; }
     .card-title .name { font-size: 1rem; }
     .form-row { flex-direction: column; }
-    #mapContainer { height: 36vh; min-height: 200px; }
+    #mapContainer { height: 36vh; min-height: 200px; border-radius: 0 0 20px 20px; }
     .filter-btn, .source-btn { padding: 6px 12px; font-size: 0.82rem; }
     .card-thumb { width: 68px; min-width: 68px; height: 68px; }
     .img-field { flex-direction: column; }
     .img-preview { width: 100%; height: 140px; }
+    .empty-illus { width: 100px; height: 100px; }
+    .empty-emoji { font-size: 2.7rem; }
   }
 </style>
 </head>
@@ -715,6 +874,7 @@
 <div class="container">
   <div id="mapContainer">
     <div id="mapHint"></div>
+    <button type="button" class="my-loc-btn" id="myLocBtn" title="显示我的位置" aria-label="显示我的位置">📍</button>
   </div>
 
   <div class="content-inner">
@@ -795,7 +955,6 @@
       </div>
     </div>
 
-    <!-- ===== 数据导出/导入 ===== -->
     <div class="data-tools">
       <div class="data-tools-title">💾 我的数据</div>
       <div class="data-tools-desc">导出备份你添加的打卡点和打卡进度，换设备或清缓存后可导入恢复。导入是合并，不会覆盖现有数据。</div>
@@ -808,7 +967,6 @@
       </div>
     </div>
 
-    <!-- ===== Tally 推荐新地点（折叠式 + 地图选点） ===== -->
     <button type="button" class="suggest-toggle-btn" id="suggestToggleBtn">📮 推荐新地点</button>
     <div class="suggest-wrapper" id="suggestWrapper">
       <div class="tally-subtitle">发现了一家好店？先在下面标记位置，再填 Tally 表单，附上照片，我会尽快核实并加进地图。</div>
@@ -908,6 +1066,7 @@ document.addEventListener('DOMContentLoaded', function () {
   var pickedLat = null;
   var tempMarker = null;
   var geolocation = null;
+  var myLocationMarker = null;
 
   var searchInput   = document.getElementById('searchInput');
   var filterBar     = document.getElementById('filterBar');
@@ -932,6 +1091,7 @@ document.addEventListener('DOMContentLoaded', function () {
   var imgFile       = document.getElementById('imgFile');
   var imgUrl        = document.getElementById('imgUrl');
   var imgClearBtn   = document.getElementById('imgClearBtn');
+  var myLocBtn      = document.getElementById('myLocBtn');
 
   var suggestToggleBtn = document.getElementById('suggestToggleBtn');
   var suggestWrapper   = document.getElementById('suggestWrapper');
@@ -1111,6 +1271,34 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
+  function buildEmptyHtml() {
+    var hasFilter = (currentFilter !== 'all')
+      || (currentSource !== 'all')
+      || (currentSearch.trim() !== '');
+
+    var title = hasFilter ? '没有找到匹配的打卡点' : '这里还没有打卡点';
+    var desc = hasFilter
+      ? '试试换个关键词，或者放宽一点筛选条件'
+      : '点下面的「添加打卡点」，把你私藏的地方加进来';
+
+    var html = '';
+    html += '<div class="empty">';
+    html += '  <div class="empty-illus">';
+    html += '    <div class="empty-circle"></div>';
+    html += '    <span class="empty-emoji">' + (hasFilter ? '🔍' : '🗺️') + '</span>';
+    html += '    <span class="empty-dot d1"></span>';
+    html += '    <span class="empty-dot d2"></span>';
+    html += '    <span class="empty-dot d3"></span>';
+    html += '  </div>';
+    html += '  <div class="empty-title">' + title + '</div>';
+    html += '  <div class="empty-desc">' + desc + '</div>';
+    if (hasFilter) {
+      html += '  <button type="button" class="empty-reset-btn" data-action="reset-filters">清除搜索和筛选</button>';
+    }
+    html += '</div>';
+    return html;
+  }
+
   function render() {
     var all = getAllSpots();
     var keyword = currentSearch.trim().toLowerCase();
@@ -1128,7 +1316,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     if (filtered.length === 0) {
-      cardList.innerHTML = '<div class="empty">没有找到打卡点<br><span style="font-size:0.82rem;margin-top:6px;display:block;color:#c2b6a8;">试试切换筛选或清空搜索</span></div>';
+      cardList.innerHTML = buildEmptyHtml();
       updateStats();
       return;
     }
@@ -1398,6 +1586,65 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
+  /* ===== 我的位置：地图上的蓝点 ===== */
+  function showMyLocation() {
+    if (!geolocation || !map) {
+      alert('定位服务还没准备好，请稍等地图加载完成再试');
+      return;
+    }
+    if (myLocBtn.classList.contains('loading')) return;
+
+    myLocBtn.classList.add('loading');
+    myLocBtn.textContent = '⏳';
+
+    geolocation.getCurrentPosition(function (status, result) {
+      myLocBtn.classList.remove('loading');
+      myLocBtn.textContent = '📍';
+
+      if (status === 'complete') {
+        var lng = result.position.lng;
+        var lat = result.position.lat;
+
+        if (myLocationMarker) {
+          map.remove(myLocationMarker);
+          myLocationMarker = null;
+        }
+
+        myLocationMarker = new AMapRef.Marker({
+          position: [lng, lat],
+          content: '<div class="my-loc-dot">' +
+                     '<div class="my-loc-pulse"></div>' +
+                     '<div class="my-loc-core"></div>' +
+                   '</div>',
+          offset: new AMapRef.Pixel(-12, -12),
+          title: '我的位置',
+          zIndex: 200
+        });
+        map.add(myLocationMarker);
+
+        if (typeof map.setZoomAndCenter === 'function') {
+          map.setZoomAndCenter(15, [lng, lat], false, 400);
+        } else {
+          map.setZoom(15);
+          map.setCenter([lng, lat]);
+        }
+      } else {
+        var msg = '定位失败';
+        if (result && result.info) msg += '：' + result.info;
+        msg += '\n\n常见原因：\n1. 浏览器地址栏左边点开，把"位置"权限改成"允许"\n2. Windows 设置 → 隐私 → 位置，打开"位置服务"并允许浏览器\n3. 这台电脑没有可用的定位源（没有 WiFi 定位模块）\n4. 手机通过局域网 IP 访问时不支持定位，需部署到 HTTPS';
+        alert(msg);
+      }
+    }, {
+      enableHighAccuracy: true,
+      timeout: 10000,
+      showButton: false,
+      showMarker: false,
+      showCircle: false,
+      panToLocation: false,
+      zoomToAccuracy: false
+    });
+  }
+
   function updateImgPreview() {
     if (formImg) {
       imgPreview.innerHTML = '<img src="' + escapeHtml(formImg) + '" alt="" onerror="this.parentNode.innerHTML=\'图片加载失败\'">';
@@ -1554,6 +1801,18 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (btn) {
       var action = btn.dataset.action;
+
+      if (action === 'reset-filters') {
+        currentSearch = '';
+        currentFilter = 'all';
+        currentSource = 'all';
+        searchInput.value = '';
+        syncFilterButtons();
+        syncSourceButtons();
+        render();
+        return;
+      }
+
       var id = btn.dataset.id;
       if (!id) return;
 
@@ -1685,6 +1944,9 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   });
 
+  /* ===== 地图右上角"我的位置"按钮 ===== */
+  myLocBtn.addEventListener('click', showMyLocation);
+
   addSubmitBtn.addEventListener('click', function () {
     var name = newNameInput.value.trim();
     if (!name) {
@@ -1780,7 +2042,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   });
 
-  /* ===== Tally 推荐区折叠切换 ===== */
   suggestToggleBtn.addEventListener('click', function () {
     suggestWrapper.classList.toggle('open');
     if (suggestWrapper.classList.contains('open')) {
@@ -1839,7 +2100,6 @@ document.addEventListener('DOMContentLoaded', function () {
     document.body.removeChild(ta);
   }
 
-  /* ===== 数据导出 ===== */
   exportBtn.addEventListener('click', function () {
     if (customSpots.length === 0 && visitedIds.size === 0) {
       alert('你现在还没有添加过打卡点，也没有打卡记录，没什么可导出的。');
@@ -1870,7 +2130,6 @@ document.addEventListener('DOMContentLoaded', function () {
     URL.revokeObjectURL(url);
   });
 
-  /* ===== 数据导入 ===== */
   importFile.addEventListener('change', function (e) {
     var file = e.target.files && e.target.files[0];
     if (!file) return;
