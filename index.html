@@ -4,6 +4,25 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>昆明网红打卡地图</title>
+
+<!-- Google Analytics 4 -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-QNGFMY65Y7"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-QNGFMY65Y7');
+</script>
+
+<!-- Microsoft Clarity -->
+<script type="text/javascript">
+  (function(c,l,a,r,i,t,y){
+    c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+    t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+    y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+  })(window, document, "clarity", "script", "z5q2o24pi2");
+</script>
+
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
@@ -66,7 +85,6 @@
   #mapHint.show { display: block; }
   #mapHint.done { background: rgba(47, 107, 58, 0.92); }
 
-  /* ===== 地图右上角：我的位置按钮 ===== */
   .my-loc-btn {
     position: absolute;
     top: 12px;
@@ -104,7 +122,6 @@
     to { transform: rotate(360deg); }
   }
 
-  /* ===== 地图上的"我的位置"脉冲标记 ===== */
   .my-loc-dot {
     position: relative;
     width: 24px;
@@ -409,7 +426,6 @@
     border-radius: 20px;
   }
 
-  /* ===== 空状态插画 ===== */
   .empty {
     display: flex;
     flex-direction: column;
@@ -1586,7 +1602,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
-  /* ===== 我的位置：地图上的蓝点 ===== */
   function showMyLocation() {
     if (!geolocation || !map) {
       alert('定位服务还没准备好，请稍等地图加载完成再试');
@@ -1828,6 +1843,15 @@ document.addEventListener('DOMContentLoaded', function () {
           visitedIds.add(id);
         }
         saveVisitedIds();
+
+        if (typeof gtag === 'function') {
+          var vSpot = findSpotById(id);
+          gtag('event', 'click_visit', {
+            spot_name: vSpot ? vSpot.name : '',
+            spot_id: id
+          });
+        }
+
         render();
         return;
       }
@@ -1944,7 +1968,6 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   });
 
-  /* ===== 地图右上角"我的位置"按钮 ===== */
   myLocBtn.addEventListener('click', showMyLocation);
 
   addSubmitBtn.addEventListener('click', function () {
