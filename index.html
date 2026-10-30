@@ -322,6 +322,19 @@
   }
   .badge.type { background: #f3eefc; color: #6b5698; }
   .badge.source { background: #fdeaf3; color: #b35580; }
+
+  /* ===== 我去过 / 待验证 标记 ===== */
+  .badge.verified-yes {
+    background: #e8f0e8;
+    color: #2f6b3a;
+    border: 1px solid #cfe0cf;
+  }
+  .badge.verified-no {
+    background: #f5f3f0;
+    color: #9a8f82;
+    border: 1px solid #e8e2da;
+  }
+
   .card-desc {
     font-size: 0.88rem;
     color: #6e6484;
@@ -858,6 +871,8 @@
   .iw-badge { font-size: 0.7rem; padding: 2px 8px; border-radius: 30px; }
   .iw-type { background: #f3eefc; color: #6b5698; }
   .iw-source { background: #fdeaf3; color: #b35580; }
+  .iw-verified-yes { background: #e8f0e8; color: #2f6b3a; }
+  .iw-verified-no { background: #f5f3f0; color: #9a8f82; }
   .iw-desc { font-size: 0.82rem; color: #6e6484; line-height: 1.4; }
   .iw-actions { margin-top: 8px; }
   .iw-nav-btn {
@@ -1039,7 +1054,6 @@ document.addEventListener('DOMContentLoaded', function () {
   var isLocalHost = (location.hostname === '127.0.0.1' || location.hostname === 'localhost');
   var AMAP_KEY = isLocalHost ? AMAP_KEY_LOCAL : AMAP_KEY_ONLINE;
 
-  /* ===== 内置数据改为从 spots.json 加载 ===== */
   var BASE_SPOTS = [];
 
   var TYPE_EMOJI = { '咖啡': '☕', '餐厅': '🍽️', '拍照点': '📸', '景点': '🏞️' };
@@ -1128,7 +1142,6 @@ document.addEventListener('DOMContentLoaded', function () {
     return 'https://uri.amap.com/navigation?to=' + lng + ',' + lat + ',' + name + '&mode=car&callnative=1';
   }
 
-  /* ===== 从 spots.json 加载数据 ===== */
   function loadSpotsFromJson() {
     return fetch('spots.json', { cache: 'no-store' })
       .then(function (res) {
@@ -1154,9 +1167,11 @@ document.addEventListener('DOMContentLoaded', function () {
           if (typeof s.img !== 'string') s.img = '';
           if (typeof s.source !== 'string') s.source = '其他';
           if (typeof s.desc !== 'string') s.desc = '';
+          s.verified = (s.verified === true);
         });
 
-        console.log('spots.json 加载成功，共 ' + BASE_SPOTS.length + ' 个地点');
+        console.log('spots.json 加载成功，共 ' + BASE_SPOTS.length + ' 个地点，其中 ' +
+          BASE_SPOTS.filter(function (s) { return s.verified; }).length + ' 个已亲测');
       });
   }
 
@@ -1244,6 +1259,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (typeof s.lng !== 'number') s.lng = DEFAULT_LNG;
             if (typeof s.lat !== 'number') s.lat = DEFAULT_LAT;
             if (typeof s.img !== 'string') s.img = '';
+            s.verified = (s.verified === true);
           });
         }
       }
@@ -1370,6 +1386,13 @@ document.addEventListener('DOMContentLoaded', function () {
       html += '      <span class="name">' + escapeHtml(spot.name) + '</span>';
       html += '      <span class="badge type">' + escapeHtml(spot.type) + '</span>';
       html += '      <span class="badge source">' + escapeHtml(spot.source || '其他') + '</span>';
+
+      if (spot.verified) {
+        html += '      <span class="badge verified-yes">✅ 我去过</span>';
+      } else {
+        html += '      <span class="badge verified-no">📌 待验证</span>';
+      }
+
       html += '    </div>';
       html += '    <div class="card-desc">' + escapeHtml(spot.desc || '') + '</div>';
       html += '    <div class="card-actions">';
@@ -1507,6 +1530,13 @@ document.addEventListener('DOMContentLoaded', function () {
     html += '<div class="iw-badges">';
     html += '<span class="iw-badge iw-type">' + emoji + ' ' + escapeHtml(spot.type) + '</span>';
     html += '<span class="iw-badge iw-source">' + escapeHtml(spot.source || '其他') + '</span>';
+
+    if (spot.verified) {
+      html += '<span class="iw-badge iw-verified-yes">✅ 我去过</span>';
+    } else {
+      html += '<span class="iw-badge iw-verified-no">📌 待验证</span>';
+    }
+
     html += '</div>';
     html += '<div class="iw-desc">' + escapeHtml(spot.desc || '') + '</div>';
     html += '<div class="iw-actions">';
@@ -2007,7 +2037,8 @@ document.addEventListener('DOMContentLoaded', function () {
         desc: target.desc,
         lng: target.lng,
         lat: target.lat,
-        img: target.img
+        img: target.img,
+        verified: target.verified
       };
 
       target.name = name;
@@ -2026,6 +2057,7 @@ document.addEventListener('DOMContentLoaded', function () {
         target.lng = backup.lng;
         target.lat = backup.lat;
         target.img = backup.img;
+        target.verified = backup.verified;
         return;
       }
 
@@ -2045,7 +2077,8 @@ document.addEventListener('DOMContentLoaded', function () {
       desc: newDescInput.value.trim(),
       lng: (typeof pickedLng === 'number') ? pickedLng : DEFAULT_LNG,
       lat: (typeof pickedLat === 'number') ? pickedLat : DEFAULT_LAT,
-      img: formImg
+      img: formImg,
+      verified: false
     };
 
     customSpots.push(newSpot);
@@ -2208,6 +2241,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (typeof s.img !== 'string') s.img = '';
         if (typeof s.source !== 'string') s.source = '其他';
         if (typeof s.desc !== 'string') s.desc = '';
+        s.verified = (s.verified === true);
         customSpots.push(s);
         existingIds[s.id] = true;
         addedSpots++;
@@ -2238,7 +2272,6 @@ document.addEventListener('DOMContentLoaded', function () {
     reader.readAsText(file);
   });
 
-  /* ===== 初始化：先加载 spots.json，再渲染 ===== */
   loadFromStorage();
   syncFilterButtons();
   syncSourceButtons();
